@@ -8,6 +8,6 @@ object Engine {
   type Engine = Has[Service]
 
   trait Service {
-    def process(request: AnalysisRequest): UIO[AnalysisReport]
+    def process(request: AnalysisRequest): IO[DeepTraceError, AnalysisReport]
   }
 }

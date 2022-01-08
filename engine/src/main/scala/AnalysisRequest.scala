@@ -1,6 +1,8 @@
 package io.github.mcsim4s.dt
 
 import AnalysisRequest.RawTraceSource
+
+import io.github.mcsim4s.dt.DeepTraceError.TraceRetrieveError
 import zio.stream.ZStream
 
 import java.time.Instant
@@ -12,5 +14,5 @@ case class AnalysisRequest(
 )
 
 object AnalysisRequest {
-  type RawTraceSource = ZStream[Any, Nothing, RawTrace]
+  type RawTraceSource = ZStream[Any, TraceRetrieveError, RawTrace]
 }

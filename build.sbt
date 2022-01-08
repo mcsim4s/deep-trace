@@ -10,14 +10,13 @@ ThisBuild / idePackagePrefix := Some("io.github.mcsim4s.dt")
 // Projects
 // ***************************
 
-val jaegerModel = (project in file("jaeger-idl/proto"))
+val jaegerModel = (project in file("jaeger-model"))
   .settings(
     name := "jaeger-model",
-    PB.targets := Seq(
-      scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
+    Compile / PB.targets := Seq(
+      scalapb.gen() -> (Compile / sourceManaged).value,
+      scalapb.zio_grpc.ZioCodeGenerator -> (Compile / sourceManaged).value
     ),
-    Compile / unmanagedSourceDirectories += file("jaeger-idl/proto/api_v2"),
-    Compile / PB.protoSources += file("jaeger-idl/proto/api_v2"),
     libraryDependencies ++= Seq(
       library.scalaPbRuntime,
       library.scalaPbRuntimeGrpc
@@ -49,6 +48,14 @@ val engine = (project in file("engine"))
   )
   .dependsOn(model)
 
+val api = (project in file("api"))
+  .settings(commonSettings)
+  .settings(
+    name := "api",
+    libraryDependencies ++= Seq()
+  )
+  .dependsOn(engine)
+
 // ***************************
 // Dependencies
 // ***************************
@@ -60,6 +67,7 @@ lazy val library =
     object Version {
       val openTelemetryVersion = "1.9.1"
       val zioVersion = "1.0.13"
+      val grpcVersion = "1.43.2"
     }
     val openTelemetry =
       "io.opentelemetry" % "opentelemetry-api" % Version.openTelemetryVersion
