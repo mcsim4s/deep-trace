@@ -52,7 +52,9 @@ val api = (project in file("api"))
   .settings(commonSettings)
   .settings(
     name := "api",
-    libraryDependencies ++= Seq()
+    libraryDependencies ++= Seq(
+      library.grpc
+    )
   )
   .dependsOn(engine)
 
@@ -76,6 +78,7 @@ lazy val library =
     val zioMacro = "dev.zio" %% "zio-macros" % Version.zioVersion
     val zioTest = "dev.zio" %% "zio-test" % Version.zioVersion
     val zioTestSbt = "dev.zio" %% "zio-test-sbt" % Version.zioVersion
+    val grpc = "io.grpc" % "grpc-netty" % Version.grpcVersion
 
     val scalaPbRuntime =
       "com.thesamet.scalapb" %% "scalapb-runtime" % VersionPb.scalapbVersion % "protobuf"

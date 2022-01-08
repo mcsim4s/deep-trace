@@ -32,6 +32,7 @@ services:
     ports:
       - 16686:16686 #UI
       - 6831:6831   #COLLECTOR
+      - 16685:16685   #Grpc api
     depends_on:
       elastic:
         condition: service_healthy
