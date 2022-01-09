@@ -1,12 +1,9 @@
 package io.github.mcsim4s.dt
 
-import TraceCluster.TraceSource
-
 import zio.stream.ZStream
 
-case class TraceCluster(hash: String, traces: TraceSource)
+case class TraceCluster(id: String, name: String)
 
 object TraceCluster {
-  type ClusterSource = ZStream[Any, Nothing, TraceCluster]
-  type TraceSource = ZStream[Any, Nothing, Trace]
+  type ClusterSource = ZStream[Any, DeepTraceError, TraceCluster]
 }

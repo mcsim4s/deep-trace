@@ -53,7 +53,8 @@ val api = (project in file("api"))
   .settings(
     name := "api",
     libraryDependencies ++= Seq(
-      library.grpc
+      library.grpc,
+      library.zioMagic
     )
   )
   .dependsOn(engine)
@@ -69,6 +70,7 @@ lazy val library =
     object Version {
       val openTelemetryVersion = "1.9.1"
       val zioVersion = "1.0.13"
+      val zioMagicVersion = "0.3.11"
       val grpcVersion = "1.43.2"
     }
     val openTelemetry =
@@ -78,6 +80,7 @@ lazy val library =
     val zioMacro = "dev.zio" %% "zio-macros" % Version.zioVersion
     val zioTest = "dev.zio" %% "zio-test" % Version.zioVersion
     val zioTestSbt = "dev.zio" %% "zio-test-sbt" % Version.zioVersion
+    val zioMagic = "io.github.kitlangton" %% "zio-magic" % Version.zioMagicVersion
     val grpc = "io.grpc" % "grpc-netty" % Version.grpcVersion
 
     val scalaPbRuntime =
