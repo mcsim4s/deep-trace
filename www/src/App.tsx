@@ -1,25 +1,45 @@
 import React from 'react';
-import logo from './logo.svg';
+import { Navbar, Heading, Section } from 'react-bulma-components';
+import { Route, Routes, Link } from "react-router-dom";
+
 import './App.css';
+import 'bulma/css/bulma.min.css';
+import ScenarioPage from "./pages/ScenarioPage";
 
 function App() {
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <Header/>
+      <Section>
+        <Routes>
+            <Route path="/" element={<ScenarioPage />} />
+            <Route path="/reports/scenarios/1/" element={<Header />} />
+        </Routes>
+      </Section>
     </div>
+  );
+}
+
+function Header() {
+  return (
+    <Navbar className="is-info">
+      <Navbar.Brand id={"m-logo"}>
+        <Navbar.Item hoverable={false}>
+          <Heading size={3} spaced={true}>
+            Deep-Trace
+          </Heading>
+        </Navbar.Item>
+      </Navbar.Brand>
+
+      <Navbar.Menu>
+        <Navbar.Container align="left">
+          <Navbar.Item>Test</Navbar.Item>
+          <Navbar.Item>Test1</Navbar.Item>
+          <Navbar.Item>Test2</Navbar.Item>
+          <Navbar.Item>Test3</Navbar.Item>
+        </Navbar.Container>
+      </Navbar.Menu>
+    </Navbar>
   );
 }
 

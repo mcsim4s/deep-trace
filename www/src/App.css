@@ -36,3 +36,7 @@
     transform: rotate(360deg);
   }
 }
+
+#m-logo {
+  font-family: 'Josefin Sans', sans-serif;
+}
