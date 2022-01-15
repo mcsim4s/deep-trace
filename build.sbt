@@ -54,7 +54,9 @@ val api = (project in file("api"))
     name := "api",
     libraryDependencies ++= Seq(
       library.grpc,
-      library.zioMagic
+      library.zioMagic,
+      library.caliban,
+      library.calibanZIOHttp
     )
   )
   .dependsOn(engine)
@@ -72,6 +74,7 @@ lazy val library =
       val zioVersion = "1.0.13"
       val zioMagicVersion = "0.3.11"
       val grpcVersion = "1.43.2"
+      val calibanVersion = "1.3.2"
     }
     val openTelemetry =
       "io.opentelemetry" % "opentelemetry-api" % Version.openTelemetryVersion
@@ -82,6 +85,8 @@ lazy val library =
     val zioTestSbt = "dev.zio" %% "zio-test-sbt" % Version.zioVersion
     val zioMagic = "io.github.kitlangton" %% "zio-magic" % Version.zioMagicVersion
     val grpc = "io.grpc" % "grpc-netty" % Version.grpcVersion
+    val caliban = "com.github.ghostdogpr" %% "caliban" % Version.calibanVersion
+    val calibanZIOHttp = "com.github.ghostdogpr" %% "caliban-zio-http" % Version.calibanVersion
 
     val scalaPbRuntime =
       "com.thesamet.scalapb" %% "scalapb-runtime" % VersionPb.scalapbVersion % "protobuf"

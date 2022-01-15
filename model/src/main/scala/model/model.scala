@@ -1,6 +1,6 @@
-package io.github.mcsim4s
+package io.github.mcsim4s.dt
 
-package object dt {
+package object model {
   implicit class RichMap[K, V](val map: Map[K, V]) {
     def putIfAbsent(k: K, v: V): Map[K, V] = {
       if (map.contains(k)) {

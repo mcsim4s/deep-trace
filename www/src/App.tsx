@@ -13,7 +13,6 @@ function App() {
       <Section>
         <Routes>
             <Route path="/" element={<ScenarioPage />} />
-            <Route path="/reports/scenarios/1/" element={<Header />} />
         </Routes>
       </Section>
     </div>

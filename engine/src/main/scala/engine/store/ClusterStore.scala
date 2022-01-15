@@ -1,10 +1,9 @@
-package io.github.mcsim4s.dt
-package store
+package io.github.mcsim4s.dt.engine.store
 
-import io.github.mcsim4s.dt.TraceCluster.ClusterSource
+import io.github.mcsim4s.dt.model.TraceCluster
+import io.github.mcsim4s.dt.model.TraceCluster._
 import zio._
 import zio.macros.accessible
-import zio.stream.ZStream
 
 @accessible
 object ClusterStore {
@@ -13,5 +12,6 @@ object ClusterStore {
   trait Service {
     def getOrCreate(reportId: String, structureHash: String): UIO[TraceCluster]
     def read(reportId: String): ClusterSource
+    def get(reportId: String, clusterId: String): UIO[TraceCluster]
   }
 }

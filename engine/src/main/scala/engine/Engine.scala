@@ -1,7 +1,8 @@
-package io.github.mcsim4s.dt
+package io.github.mcsim4s.dt.engine
 
-import zio._
-import zio.macros._
+import io.github.mcsim4s.dt.model.DeepTraceError
+import zio.macros.accessible
+import zio.{Has, IO}
 
 @accessible
 object Engine {

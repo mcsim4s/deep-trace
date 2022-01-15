@@ -1,4 +1,4 @@
-package io.github.mcsim4s.dt
+package io.github.mcsim4s.dt.model
 
 import zio.stream.ZStream
 

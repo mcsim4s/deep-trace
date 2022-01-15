@@ -1,9 +1,8 @@
-package io.github.mcsim4s.dt
-package live.store
+package io.github.mcsim4s.dt.engine.live.store
 
-import store.ReportStore
-import store.ReportStore.ReportStore
-
+import io.github.mcsim4s.dt.engine._
+import io.github.mcsim4s.dt.engine.store.ReportStore
+import io.github.mcsim4s.dt.engine.store.ReportStore.ReportStore
 import zio._
 import zio.random.Random
 import zio.stm._

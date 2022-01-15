@@ -1,14 +1,16 @@
-package io.github.mcsim4s.dt.live
+package io.github.mcsim4s.dt.engine.live
 
-import io.github.mcsim4s.dt.AnalysisRequest.RawTraceSource
-import io.github.mcsim4s.dt.{AnalysisReport, AnalysisRequest, DeepTraceError, Engine, TraceCluster}
-import io.github.mcsim4s.dt.Engine.Engine
-import io.github.mcsim4s.dt.TraceCluster.ClusterSource
-import io.github.mcsim4s.dt.mappers.RawTraceMappers
-import io.github.mcsim4s.dt.store.ClusterStore.ClusterStore
-import io.github.mcsim4s.dt.store.ProcessStore.ProcessStore
-import io.github.mcsim4s.dt.store.{ClusterStore, ProcessStore, ReportStore}
-import io.github.mcsim4s.dt.store.ReportStore.ReportStore
+import io.github.mcsim4s.dt.engine.AnalysisRequest.RawTraceSource
+import io.github.mcsim4s.dt.engine.Engine
+import io.github.mcsim4s.dt.engine.Engine.Engine
+import io.github.mcsim4s.dt.model.TraceCluster.ClusterSource
+import io.github.mcsim4s.dt.model.{DeepTraceError, TraceCluster}
+import io.github.mcsim4s.dt.model.mappers.RawTraceMappers
+import io.github.mcsim4s.dt.engine.{AnalysisReport, AnalysisRequest, Engine}
+import io.github.mcsim4s.dt.engine.store.ClusterStore.ClusterStore
+import io.github.mcsim4s.dt.engine.store.ProcessStore.ProcessStore
+import io.github.mcsim4s.dt.engine.store.{ClusterStore, ProcessStore, ReportStore}
+import io.github.mcsim4s.dt.engine.store.ReportStore.ReportStore
 import zio.{IO, UIO, ZIO, ZLayer}
 
 class LiveEngine(

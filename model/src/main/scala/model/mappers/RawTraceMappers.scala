@@ -1,10 +1,10 @@
-package io.github.mcsim4s.dt
-package mappers
-
-import DeepTraceError._
+package io.github.mcsim4s.dt.model.mappers
 
 import com.google.protobuf.ByteString
+import io.github.mcsim4s.dt.model.DeepTraceError.RawTraceMappingError
+import io.github.mcsim4s.dt.model.{Process, RawTrace, Trace}
 import io.jaegertracing.api_v2.model.Span
+import io.github.mcsim4s.dt.model._
 import zio._
 
 object RawTraceMappers {

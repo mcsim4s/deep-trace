@@ -1,8 +1,8 @@
-package io.github.mcsim4s.dt
+package io.github.mcsim4s.dt.engine
 
-import AnalysisRequest.RawTraceSource
-
-import io.github.mcsim4s.dt.DeepTraceError.TraceRetrieveError
+import io.github.mcsim4s.dt.model.DeepTraceError.TraceRetrieveError
+import io.github.mcsim4s.dt.model.RawTrace
+import io.github.mcsim4s.dt.engine.AnalysisRequest.RawTraceSource
 import zio.stream.ZStream
 
 import java.time.Instant

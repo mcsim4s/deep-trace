@@ -1,6 +1,8 @@
+import Process from "../components/Process";
+
 function ScenarioPage() {
     return (
-        <div/>
+       <Process />
     );
 }
 

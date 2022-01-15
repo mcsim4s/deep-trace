@@ -1,7 +1,6 @@
-package io.github.mcsim4s.dt
-package live.store
+package io.github.mcsim4s.dt.engine.live.store
 
-import store.SpanStore
+import io.github.mcsim4s.dt.engine.store.SpanStore
 
 import io.jaegertracing.api_v2.model.Span
 import io.opentelemetry.api.trace.SpanId

@@ -1,5 +1,4 @@
-package io.github.mcsim4s.dt
-package store
+package io.github.mcsim4s.dt.engine.store
 
 import io.jaegertracing.api_v2.model.Span
 import zio._

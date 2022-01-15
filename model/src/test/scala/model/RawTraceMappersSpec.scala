@@ -1,12 +1,13 @@
 package io.github.mcsim4s.dt
+package model
 
-import mappers.RawTraceMappers
+import model.mappers.RawTraceMappers
 
 import com.google.protobuf.ByteString
 import io.jaegertracing.api_v2.model.{Span, SpanRef, SpanRefType}
 import zio.test.Assertion._
 import zio.test.environment.TestEnvironment
-import zio.test.{Trace => _, _}
+import zio.test._
 
 object RawTraceMappersSpec extends DefaultRunnableSpec {
 

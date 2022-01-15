@@ -1,6 +1,6 @@
-package io.github.mcsim4s.dt
-package store
+package io.github.mcsim4s.dt.engine.store
 
+import io.github.mcsim4s.dt.engine.{AnalysisReport, AnalysisRequest}
 import zio._
 import zio.macros.accessible
 
