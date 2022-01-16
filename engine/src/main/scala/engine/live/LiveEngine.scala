@@ -3,7 +3,7 @@ package io.github.mcsim4s.dt.engine.live
 import io.github.mcsim4s.dt.engine.AnalysisRequest.RawTraceSource
 import io.github.mcsim4s.dt.engine.Engine
 import io.github.mcsim4s.dt.engine.Engine.Engine
-import io.github.mcsim4s.dt.model.TraceCluster.ClusterSource
+import io.github.mcsim4s.dt.model.TraceCluster.{ClusterId, ClusterSource}
 import io.github.mcsim4s.dt.model.{DeepTraceError, TraceCluster}
 import io.github.mcsim4s.dt.model.mappers.RawTraceMappers
 import io.github.mcsim4s.dt.engine.{AnalysisReport, AnalysisRequest, Engine}
@@ -15,8 +15,8 @@ import zio.{IO, UIO, ZIO, ZLayer}
 
 class LiveEngine(
     reportStore: ReportStore.Service,
-    clusterStore: ClusterStore.Service,
-    processStore: ProcessStore.Service
+    clusterStore: ClusterStore.Service
+//    processStore: ProcessStore.Service
 ) extends Engine.Service {
   override def process(request: AnalysisRequest): IO[DeepTraceError, AnalysisReport] = {
     for {
@@ -31,7 +31,7 @@ class LiveEngine(
       .mapM(RawTraceMappers.fromRaw)
       .foreach { trace =>
         for {
-          cluster <- clusterStore.getOrCreate(report.id, trace.hash)
+          cluster <- clusterStore.getOrCreate(ClusterId(report.id, trace.hash))
         } yield ()
       }
       .as(clusterStore.read(report.id))
@@ -41,12 +41,12 @@ class LiveEngine(
 }
 
 object LiveEngine {
-  def makeService: ZIO[ReportStore with ClusterStore with ProcessStore, Nothing, LiveEngine] =
+  def makeService: ZIO[ReportStore with ClusterStore, Nothing, LiveEngine] =
     for {
       reportStore <- ZIO.service[ReportStore.Service]
       clusterStore <- ZIO.service[ClusterStore.Service]
-      processStore <- ZIO.service[ProcessStore.Service]
-    } yield new LiveEngine(reportStore, clusterStore, processStore)
+//      processStore <- ZIO.service[ProcessStore.Service]
+    } yield new LiveEngine(reportStore, clusterStore) //, processStore)
 
-  val layer: ZLayer[ReportStore with ClusterStore with ProcessStore, Nothing, Engine] = makeService.toLayer
+  val layer: ZLayer[ReportStore with ClusterStore, Nothing, Engine] = makeService.toLayer
 }

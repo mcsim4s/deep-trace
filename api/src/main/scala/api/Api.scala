@@ -2,23 +2,22 @@ package io.github.mcsim4s.dt.api
 
 import caliban.schema.GenericSchema
 import caliban.{GraphQL, RootResolver}
+import io.github.mcsim4s.dt.api.ApiService.ApiService
 import io.github.mcsim4s.dt.api.model.TraceCluster
-import io.github.mcsim4s.dt.engine.store.ClusterStore
-import io.github.mcsim4s.dt.engine.store.ClusterStore.ClusterStore
 import zio._
 
-object Api extends GenericSchema[ClusterStore] {
+object Api extends GenericSchema[ApiService] {
   case class ClusterQueries(
-      get: String => URIO[ClusterStore, TraceCluster]
+      get: String => URIO[ApiService, TraceCluster]
   )
 
   val clusters = GraphQL.graphQL(
     RootResolver(
       ClusterQueries(
-        get = id => ClusterStore.get("", id).map(TraceCluster.fromModel)
+        get = id => ApiService.getCluster("", id)
       )
     )
   )
 
-  val root = clusters
+  val root: GraphQL[ApiService] = clusters
 }

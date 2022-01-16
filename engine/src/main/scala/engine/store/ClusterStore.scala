@@ -10,8 +10,7 @@ object ClusterStore {
   type ClusterStore = Has[Service]
 
   trait Service {
-    def getOrCreate(reportId: String, structureHash: String): UIO[TraceCluster]
+    def getOrCreate(clusterId: ClusterId): UIO[TraceCluster]
     def read(reportId: String): ClusterSource
-    def get(reportId: String, clusterId: String): UIO[TraceCluster]
   }
 }

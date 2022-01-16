@@ -55,6 +55,8 @@ val api = (project in file("api"))
     libraryDependencies ++= Seq(
       library.grpc,
       library.zioMagic,
+      library.zioHttp,
+      library.tapirZioServer,
       library.caliban,
       library.calibanZIOHttp
     )
@@ -75,6 +77,8 @@ lazy val library =
       val zioMagicVersion = "0.3.11"
       val grpcVersion = "1.43.2"
       val calibanVersion = "1.3.2"
+      val zioHttpVersion = "1.0.0.0-RC22"
+      val tapirZio = "0.20.0-M5"
     }
     val openTelemetry =
       "io.opentelemetry" % "opentelemetry-api" % Version.openTelemetryVersion
@@ -84,9 +88,12 @@ lazy val library =
     val zioTest = "dev.zio" %% "zio-test" % Version.zioVersion
     val zioTestSbt = "dev.zio" %% "zio-test-sbt" % Version.zioVersion
     val zioMagic = "io.github.kitlangton" %% "zio-magic" % Version.zioMagicVersion
+    val zioHttp = "io.d11" %% "zhttp" % Version.zioHttpVersion
+    val tapirZioServer = "com.softwaremill.sttp.tapir" %% "tapir-zio-http-server" % Version.tapirZio
     val grpc = "io.grpc" % "grpc-netty" % Version.grpcVersion
     val caliban = "com.github.ghostdogpr" %% "caliban" % Version.calibanVersion
-    val calibanZIOHttp = "com.github.ghostdogpr" %% "caliban-zio-http" % Version.calibanVersion
+    val calibanZIOHttp =
+      "com.github.ghostdogpr" %% "caliban-zio-http" % Version.calibanVersion exclude ("com.softwaremill.sttp.tapir", "tapir-core_2.13")
 
     val scalaPbRuntime =
       "com.thesamet.scalapb" %% "scalapb-runtime" % VersionPb.scalapbVersion % "protobuf"
