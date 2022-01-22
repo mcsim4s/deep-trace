@@ -1,6 +1,5 @@
 import { gql } from '@apollo/client';
 export type Maybe<T> = T | null;
-export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: Maybe<T[SubKey]> };
 export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
@@ -11,20 +10,36 @@ export type Scalars = {
   Boolean: boolean;
   Int: number;
   Float: number;
+  Duration: any;
+};
+
+export type ClusterId = {
+  __typename?: 'ClusterId';
+  reportId: Scalars['String'];
+  structureHash: Scalars['String'];
 };
 
 export type ClusterQueries = {
   __typename?: 'ClusterQueries';
-  get: TraceCluster;
+  getCluster: TraceCluster;
 };
 
 
-export type ClusterQueriesGetArgs = {
-  value: Scalars['String'];
+export type ClusterQueriesGetClusterArgs = {
+  reportId: Scalars['String'];
+  structureHash: Scalars['String'];
+};
+
+
+export type Process = {
+  __typename?: 'Process';
+  start: Scalars['Duration'];
+  duration: Scalars['Duration'];
+  children: Array<Process>;
 };
 
 export type TraceCluster = {
   __typename?: 'TraceCluster';
-  reportId: Scalars['String'];
-  structureHash: Scalars['String'];
+  clusterId: ClusterId;
+  rootProcess: Process;
 };

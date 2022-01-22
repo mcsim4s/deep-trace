@@ -4,7 +4,7 @@ import caliban.{CalibanError, ZHttpAdapter}
 import io.github.mcsim4s.dt.api.ApiService.ApiService
 import io.github.mcsim4s.dt.engine.Engine.Engine
 import io.github.mcsim4s.dt.engine.live.LiveEngine
-import io.github.mcsim4s.dt.engine.live.store.{LiveClusterStore, LiveReportStore}
+import io.github.mcsim4s.dt.engine.live.store.{LiveClusterStore, LiveProcessStore, LiveReportStore, LiveSpanStore}
 import io.github.mcsim4s.dt.engine.source.JaegerSource
 import io.github.mcsim4s.dt.engine.store.ClusterStore.ClusterStore
 import io.grpc.ManagedChannelBuilder
@@ -17,6 +17,7 @@ import zhttp.http.Middleware._
 import zhttp.service.Server
 import zio._
 import zio.blocking.Blocking
+import zio.clock.Clock
 import zio.magic._
 import zio.stream.ZStream
 
@@ -69,6 +70,8 @@ object Main extends zio.App {
       JaegerSource.layer,
       LiveReportStore.layer,
       LiveClusterStore.layer,
+      LiveProcessStore.layer,
+      LiveSpanStore.layer,
       LiveEngine.layer,
       ApiService.live
     )
