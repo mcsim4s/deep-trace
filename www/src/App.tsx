@@ -6,6 +6,7 @@ import {ErrorBoundary, FallbackProps} from 'react-error-boundary';
 import './App.css';
 import 'bulma/css/bulma.min.css';
 import ScenarioPage from "./pages/ScenarioPage";
+import RoutesPage from "./pages/RoutesPage";
 
 function App() {
   return (
@@ -14,7 +15,8 @@ function App() {
       <Header/>
       <Section>
         <Routes>
-            <Route path="/" element={<ScenarioPage />} />
+            <Route path="/" element={<RoutesPage />} />
+            <Route path="/reportId" element={<ScenarioPage />} />
         </Routes>
       </Section>
     </ErrorBoundary>
@@ -24,7 +26,7 @@ function App() {
 
 function Header() {
   return (
-    <Navbar className="is-info">
+    <Navbar className="is-primary">
       <Navbar.Brand id={"m-logo"}>
         <Navbar.Item hoverable={false}>
           <Heading size={3} spaced={true}>
@@ -35,10 +37,7 @@ function Header() {
 
       <Navbar.Menu>
         <Navbar.Container align="left">
-          <Navbar.Item>Test</Navbar.Item>
-          <Navbar.Item>Test1</Navbar.Item>
-          <Navbar.Item>Test2</Navbar.Item>
-          <Navbar.Item>Test3</Navbar.Item>
+          <Navbar.Item href="/">Reports</Navbar.Item>
         </Navbar.Container>
       </Navbar.Menu>
     </Navbar>

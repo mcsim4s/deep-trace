@@ -1,8 +1,8 @@
-import Process from "../components/Process";
+import Cluster from "../components/Cluster";
 
 function ScenarioPage() {
     return (
-       <Process />
+       <Cluster />
     );
 }
 

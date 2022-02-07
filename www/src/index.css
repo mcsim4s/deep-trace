@@ -11,3 +11,9 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.process-bar {
+  height: 12px;
+  background: #009e6c;
+  margin: 10px 0;
+}

@@ -10,7 +10,13 @@ export type Scalars = {
   Boolean: boolean;
   Int: number;
   Float: number;
-  Duration: any;
+  Duration: number;
+};
+
+export type AnalysisReport = {
+  __typename?: 'AnalysisReport';
+  id: Scalars['String'];
+  name: Scalars['String'];
 };
 
 export type ClusterId = {
@@ -19,17 +25,17 @@ export type ClusterId = {
   structureHash: Scalars['String'];
 };
 
-export type ClusterQueries = {
-  __typename?: 'ClusterQueries';
-  getCluster: TraceCluster;
+
+export type Mutations = {
+  __typename?: 'Mutations';
+  createReport?: Maybe<AnalysisReport>;
 };
 
 
-export type ClusterQueriesGetClusterArgs = {
-  reportId: Scalars['String'];
-  structureHash: Scalars['String'];
+export type MutationsCreateReportArgs = {
+  sourceId: Scalars['String'];
+  params: TraceQueryInput;
 };
-
 
 export type Process = {
   __typename?: 'Process';
@@ -38,8 +44,30 @@ export type Process = {
   children: Array<Process>;
 };
 
+export type Queries = {
+  __typename?: 'Queries';
+  getCluster: TraceCluster;
+  listReports?: Maybe<Array<AnalysisReport>>;
+};
+
+
+export type QueriesGetClusterArgs = {
+  reportId: Scalars['String'];
+  structureHash: Scalars['String'];
+};
+
 export type TraceCluster = {
   __typename?: 'TraceCluster';
   clusterId: ClusterId;
   rootProcess: Process;
+};
+
+export type TraceQueryInput = {
+  serviceName: Scalars['String'];
+  operationName: Scalars['String'];
+  tags: Array<Scalars['String']>;
+  startTimeMinSeconds?: Maybe<Scalars['Int']>;
+  startTimeMaxSeconds?: Maybe<Scalars['Int']>;
+  durationMinMillis?: Maybe<Scalars['Int']>;
+  durationMaxMillis?: Maybe<Scalars['Int']>;
 };

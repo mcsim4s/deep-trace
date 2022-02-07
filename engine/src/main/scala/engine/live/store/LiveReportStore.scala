@@ -18,6 +18,8 @@ class LiveReportStore(reportsRef: TMap[String, AnalysisReport], random: Random.S
       )
       _ <- STM.atomically(reportsRef.put(id, report))
     } yield report
+
+  override def list(): UIO[List[AnalysisReport]] = STM.atomically(reportsRef.values)
 }
 
 object LiveReportStore {

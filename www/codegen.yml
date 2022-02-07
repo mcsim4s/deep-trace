@@ -1,5 +1,9 @@
 overwrite: true
 schema: "http://localhost:8080/graphql"
+config:
+  scalars:
+    Duration: number
+
 generates:
   src/generated/graphql.tsx:
     plugins:
