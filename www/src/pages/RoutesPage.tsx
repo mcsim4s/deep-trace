@@ -1,34 +1,32 @@
-import {gql, useQuery} from "@apollo/client";
-import {Queries} from "../generated/graphql";
-import {Columns, Heading} from "react-bulma-components";
+import {Columns} from "react-bulma-components";
 import React from "react";
 import ReportCreateForm from "../components/ReportCreateForm";
+import ReportsListView from "../components/ReportsListView";
+import {ApolloQueryResult} from "@apollo/client/core/types";
+import {Queries} from "../generated/graphql";
 
-function ScenarioPage() {
-  let { loading, error, data } = useQuery<Queries>(
-    gql`
-      query {
-        listReports {
-          id,
-          name
-        }
-      }
-    `,
-  );
-  if (error) throw error;
+export default class RoutesPage extends React.Component {
+  constructor(props: {}) {
+    super(props);
+    this.state = {};
+  }
 
-  return <>
-    <Columns>
-      <Columns.Column size={'one-third'}>
-        <ReportCreateForm/>
-      </Columns.Column>
-      <Columns.Column>
-        {loading ? (<Heading size={4}>Loading ...</Heading>) : (
-          <Heading size={4}>REPORTS</Heading>
-        )}
-      </Columns.Column>
-    </Columns>
-  </>;
+  render() {
+    let refetchFunc: ((variables?: Partial<any>) => Promise<ApolloQueryResult<Queries>>) | undefined = undefined;
+
+    const onSubmit = () => {
+      refetchFunc && refetchFunc();
+    };
+
+    return <>
+      <Columns>
+        <Columns.Column size={'one-third'}>
+          <ReportCreateForm onSubmit={onSubmit}/>
+        </Columns.Column>
+        <Columns.Column>
+          <ReportsListView whenToRefetch={(x) => refetchFunc = x}/>
+        </Columns.Column>
+      </Columns>
+    </>;
+  }
 }
-
-export default ScenarioPage;

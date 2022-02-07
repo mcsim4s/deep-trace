@@ -28,7 +28,11 @@ const createReportMutation = gql`
   }
 `;
 
-export default function ReportCreateBulmaForm() {
+type AddReportFormState = {
+  onSubmit: () => any
+}
+
+export default function ReportCreateBulmaForm(props: AddReportFormState) {
   const [send] = useMutation<Mutations, MutationsCreateReportArgs>(
     createReportMutation
   )
@@ -39,7 +43,6 @@ export default function ReportCreateBulmaForm() {
     <hr/>
     <Formik initialValues={initialValues} onSubmit={(values, actions) => {
       actions.setSubmitting(false)
-      alert(JSON.stringify(values, null, 2));
       const nowMillis = Math.floor(Date.now() / 1000);
       send({
           variables: {
@@ -53,7 +56,7 @@ export default function ReportCreateBulmaForm() {
             }
           }
         }
-      )
+      ).then(() => props.onSubmit())
     }}>
     <Form>
       <BulmaForm.Field>

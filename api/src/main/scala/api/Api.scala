@@ -2,13 +2,15 @@ package io.github.mcsim4s.dt.api
 
 import caliban.Value.IntValue.LongNumber
 import caliban.schema.{GenericSchema, Schema}
-import caliban.{GraphQL, RootResolver}
+import caliban.wrappers.Wrapper.OverallWrapper
+import caliban._
 import caliban.wrappers.Wrappers._
 import io.github.mcsim4s.dt.api.ApiService.ApiService
 import io.github.mcsim4s.dt.api.model._
 import io.github.mcsim4s.dt.engine.AnalysisReport
 import zio._
-import zio.console.Console
+import zio.clock.Clock
+import zio.console.{Console, putStrLn, putStrLnErr}
 
 import scala.concurrent.duration._
 
@@ -48,8 +50,24 @@ object Api extends GenericSchema[ApiService] {
     )
   )
 
-  val root: GraphQL[ApiService with Console] = Seq(
+  val root: GraphQL[ApiService with Console with Clock] = Seq(
     clusters,
     reports
-  ).reduce(_ |+| _).rename(Some("Queries"), Some("Mutations"), Some("Subscriptions")) @@ printErrors
+  ).reduce(_ |+| _).rename(Some("Queries"), Some("Mutations"), Some("Subscriptions")) @@ printErrors @@ logging
+
+  lazy val logging: OverallWrapper[Console with Clock] =
+    new OverallWrapper[Console with Clock] {
+      def wrap[R1 <: Console with Clock](
+          process: GraphQLRequest => ZIO[R1, Nothing, GraphQLResponse[CalibanError]]
+      ): GraphQLRequest => ZIO[R1, Nothing, GraphQLResponse[CalibanError]] =
+        request =>
+          process(request).timed
+            .tap {
+              case (processTime, response) =>
+                ZIO.when(response.errors.isEmpty)(
+                  putStrLn(s"${request.operationName} is performed in ${processTime.toMillis}ms").orDie
+                )
+            }
+            .map(_._2)
+    }
 }
