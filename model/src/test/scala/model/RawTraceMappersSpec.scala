@@ -53,15 +53,15 @@ object RawTraceMappersSpec extends DefaultRunnableSpec {
           RawTraceMappers
             .fromRaw(singleSpanTrace)
 //            .tap(trace => zio.console.putStrLn(trace.toString))
-        )(hasField("structureRoot.name", _.structureRoot.name, equalTo("single operation")))
+        )(hasField("name", _.name, equalTo("single operation")))
       },
       testM("Convert one child raw trace to trace") {
         for {
-          trace <-
+          process <-
             RawTraceMappers
               .fromRaw(singleChildTrace)
               .tap(trace => zio.console.putStrLn(trace.toString))
-        } yield assert(trace.structureRoot.children)(hasSize(equalTo(1)))
+        } yield assert(process.children)(hasSize(equalTo(1)))
       }
     )
 

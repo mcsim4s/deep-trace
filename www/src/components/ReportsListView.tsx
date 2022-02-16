@@ -3,6 +3,7 @@ import React from "react";
 import {gql, useQuery} from "@apollo/client";
 import {AnalysisReport, Queries, Scalars, Maybe} from "../generated/graphql";
 import {ApolloQueryResult} from "@apollo/client/core/types";
+import {ReportFragment} from "../gql/fragments";
 
 type CreateReportParam = {
   serviceName: string;
@@ -20,10 +21,11 @@ const initialValues: CreateReportParam = {
 
 
 const listReportsQuery = gql`
+  ${ReportFragment}
+  
   query ListReports {
     listReports {
-        id,
-        name
+      ...Report
     }
   }
 `;
@@ -46,7 +48,7 @@ export default function ReportsListView(props: ReportListProps) {
     <Heading size={2}>Existing reports</Heading>
     {data?.listReports?.map((report) => {
       return <Box key={report.id}>
-        {report.name}
+        {report.createdAt}
       </Box>
     })}
     <br/>

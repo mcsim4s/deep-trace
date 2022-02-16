@@ -3,8 +3,6 @@ name := "deep-trace"
 version := "0.1"
 
 ThisBuild / scalaVersion := "2.13.7"
-ThisBuild / idePackagePrefix := Some("io.github.mcsim4s.dt")
-ThisBuild / idePackagePrefix := Some("io.github.mcsim4s.dt")
 
 // ***************************
 // Projects

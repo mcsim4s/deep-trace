@@ -3,31 +3,16 @@ import { useQuery, gql } from '@apollo/client';
 import { Heading } from 'react-bulma-components';
 import {Queries, QueriesGetClusterArgs} from "../generated/graphql";
 import {ProcessView} from "./ProcessView";
+import {ClusterFragment, ProcessFragment} from "../gql/fragments";
 
 export default function Cluster() {
   let { loading, error, data } = useQuery<Queries, QueriesGetClusterArgs>(
     gql`
-      fragment ProcessFields on Process {
-        start,
-        duration
-      }
-      
-      fragment ProcessRecursive on Process {
-        ...ProcessFields,
-        children {
-          ...ProcessFields
-        }
-      }
+      ${ClusterFragment}
       
       query GetCluster($reportId: String!, $structureHash: String!) {
         getCluster(reportId: $reportId, structureHash: $structureHash) {
-          clusterId {
-            reportId,
-            structureHash
-          },
-          rootProcess {
-            ...ProcessRecursive
-          }
+          ...Cluster
         }
       }
     `,
@@ -40,7 +25,7 @@ export default function Cluster() {
   return <>
     <div>
       <Heading size={1}>Cluster</Heading>
-      <Heading size={4}>Report id: {data.getCluster.clusterId.reportId}</Heading>
+      <Heading size={4}>Report id: {data.getCluster.id.reportId}</Heading>
       <ProcessView root={data.getCluster.rootProcess} current={data.getCluster.rootProcess}/>
     </div>
   </>;

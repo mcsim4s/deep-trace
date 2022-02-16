@@ -1,0 +1,18 @@
+package io.github.mcsim4s.dt.engine.store
+
+import io.github.mcsim4s.dt.model.{AnalysisReport, AnalysisRequest, DeepTraceError}
+import zio.macros.accessible
+import zio._
+
+@accessible
+object ReportStore {
+  type ReportStore = Has[Service]
+
+  trait Service {
+    def create(request: AnalysisRequest): UIO[AnalysisReport]
+    def list(): UIO[List[AnalysisReport]]
+    def update(reportId: String)(
+        upd: AnalysisReport => IO[DeepTraceError, AnalysisReport]
+    ): IO[DeepTraceError, AnalysisReport]
+  }
+}

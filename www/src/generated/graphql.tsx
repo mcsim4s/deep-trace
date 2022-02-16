@@ -11,12 +11,17 @@ export type Scalars = {
   Int: number;
   Float: number;
   Duration: number;
+  /** An instantaneous point on the time-line represented by a standard date time string */
+  Instant: any;
 };
 
 export type AnalysisReport = {
   __typename?: 'AnalysisReport';
   id: Scalars['String'];
-  name: Scalars['String'];
+  createdAt: Scalars['Instant'];
+  service: Scalars['String'];
+  operation: Scalars['String'];
+  state: State;
 };
 
 export type ClusterId = {
@@ -24,6 +29,18 @@ export type ClusterId = {
   reportId: Scalars['String'];
   structureHash: Scalars['String'];
 };
+
+export type Clustering = {
+  __typename?: 'Clustering';
+  /** Fake field because GraphQL does not support empty objects. Do not query, use __typename instead. */
+  _?: Maybe<Scalars['Boolean']>;
+};
+
+export type ClustersBuilt = {
+  __typename?: 'ClustersBuilt';
+  clusterIds: Array<ClusterId>;
+};
+
 
 
 export type Mutations = {
@@ -56,9 +73,11 @@ export type QueriesGetClusterArgs = {
   structureHash: Scalars['String'];
 };
 
+export type State = Clustering | ClustersBuilt;
+
 export type TraceCluster = {
   __typename?: 'TraceCluster';
-  clusterId: ClusterId;
+  id: ClusterId;
   rootProcess: Process;
 };
 

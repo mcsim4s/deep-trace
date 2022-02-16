@@ -3,6 +3,7 @@ import React from "react";
 import {Form, Field, Formik} from "formik";
 import {gql, useMutation} from "@apollo/client";
 import {MutationsCreateReportArgs, Mutations, Scalars, Maybe} from "../generated/graphql";
+import {ReportFragment} from "../gql/fragments";
 
 type CreateReportParam = {
   serviceName: string;
@@ -20,10 +21,10 @@ const initialValues: CreateReportParam = {
 
 
 const createReportMutation = gql`
+  ${ReportFragment}
   mutation CreateReport($sourceId: String!, $params: TraceQueryInput!) {
     createReport(sourceId: $sourceId, params: $params) {
-      id,
-      name
+      ...Report
     }
   }
 `;
