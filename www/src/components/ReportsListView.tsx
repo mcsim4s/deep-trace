@@ -1,4 +1,4 @@
-import {Box, Button, Columns, Heading, Panel, Section} from "react-bulma-components";
+import {Block, Box, Button, Columns, Heading, Panel, Section} from "react-bulma-components";
 import React from "react";
 import {gql, useQuery} from "@apollo/client";
 import {AnalysisReport, Queries, Scalars, Maybe} from "../generated/graphql";
@@ -29,14 +29,19 @@ export default function ReportsListView(props: ReportListProps) {
 
   if (error) throw error;
   if (loading) return <Heading>Loading ...</Heading>;
+  if (!data) throw new Error("No Data");
+
 
   return <>
     <Heading size={2}>Existing reports</Heading>
-    {data?.listReports?.map((report) => {
-      return <Link to={`/report/${report.id}`} key={report.id}>
-        <Box>{report.createdAt}</Box>
+    <Block>
+    {data.listReports?.map((report) => {
+      const created = new Date(Date.parse(report.createdAt));
+      return <Link to={`/report/${report.id}`} key={report.id} className="box">
+        {report.service} --- {report.operation} --- {created.toLocaleString()} -------- {report.state.__typename}
       </Link>
     })}
+    </Block>
     <br/>
 
   </>;

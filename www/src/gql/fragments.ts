@@ -24,6 +24,7 @@ export const ReportFragment = gql`
 
 export const ProcessFragment = gql`
     fragment ProcessFields on Process {
+        id,
         service,
         operation,
         start,

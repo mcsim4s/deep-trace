@@ -32,7 +32,7 @@ class Bar extends React.Component<ViewState> {
         </Columns.Column>
       </Columns>
       {current.children?.map(child => {
-        return <Bar key={current.id} root={this.props.root} current={child}/>
+        return <Bar key={child.id} root={this.props.root} current={child}/>
       })}
     </>;
   }
@@ -50,7 +50,7 @@ export class ProcessView extends React.Component<ViewState> {
           </Level>
         </Columns.Column>
       </Columns>
-      <Bar root={this.props.root} current={this.props.current}/>
+      <Bar root={this.props.root} current={this.props.current} key={this.props.root.id}/>
     </>;
   }
 }
