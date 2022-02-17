@@ -53,7 +53,7 @@ object RawTraceMappersSpec extends DefaultRunnableSpec {
           RawTraceMappers
             .fromRaw(singleSpanTrace)
 //            .tap(trace => zio.console.putStrLn(trace.toString))
-        )(hasField("name", _.name, equalTo("single operation")))
+        )(hasField("operation", _.operation, equalTo("single operation")))
       },
       testM("Convert one child raw trace to trace") {
         for {

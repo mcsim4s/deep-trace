@@ -56,6 +56,9 @@ export type MutationsCreateReportArgs = {
 
 export type Process = {
   __typename?: 'Process';
+  id: Scalars['String'];
+  service: Scalars['String'];
+  operation: Scalars['String'];
   start: Scalars['Duration'];
   duration: Scalars['Duration'];
   children: Array<Process>;

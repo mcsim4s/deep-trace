@@ -14,6 +14,21 @@ code {
 
 .process-bar {
   height: 12px;
-  background: #009e6c;
-  margin: 10px 0;
+  background: #00d1b2;
+  border-radius: 4px;
+  margin: 0;
+  font-size: 10px;
+}
+
+.process-legend {
+  font-size: 14px;
+  background: #eee;
+}
+
+.process-bar-container {
+  background: #fff;
+}
+
+.process-heading {
+  background: #ddd;
 }

@@ -26,10 +26,12 @@ export default function Cluster() {
   if (loading) return <Heading size={4}>Loading ...</Heading>;
   if (!data) throw new Error("no data");
 
+  const root = data.getCluster.rootProcess;
+
   return <>
     <div>
-      <Heading size={1}>Cluster</Heading>
-      <Heading size={4}>Report id: {data.getCluster.id.reportId}</Heading>
+      <Heading size={3}>{root.service} : {root.operation}</Heading>
+      <Heading subtitle={true} size={6}>{data.getCluster.id.structureHash}</Heading>
       <ProcessView root={data.getCluster.rootProcess} current={data.getCluster.rootProcess}/>
     </div>
   </>;

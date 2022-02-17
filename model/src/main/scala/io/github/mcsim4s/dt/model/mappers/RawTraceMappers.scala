@@ -57,7 +57,8 @@ object RawTraceMappers {
       id <- ZIO.accessM[Random](_.get.nextUUID)
     } yield Process(
       id = ProcessId(id.toString),
-      name = span.operationName,
+      service = span.getProcess.serviceName,
+      operation = span.operationName,
       start = span.getStartTime.toInstant.minus(startTime).toDuration,
       duration = span.getDuration.asScala,
       children = children

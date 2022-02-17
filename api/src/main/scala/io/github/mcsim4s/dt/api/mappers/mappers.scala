@@ -31,6 +31,9 @@ package object mappers {
 
   def toApi(process: Process): ApiProcess =
     ApiProcess(
+      id = process.id.id,
+      service = process.service,
+      operation = process.operation,
       start = process.start,
       duration = process.duration,
       children = process.children.map(toApi)
