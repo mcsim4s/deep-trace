@@ -5,7 +5,7 @@ import ReportsListView from "../components/ReportsListView";
 import {ApolloQueryResult} from "@apollo/client/core/types";
 import {Queries} from "../generated/graphql";
 
-export default class RoutesPage extends React.Component {
+export default class ReportsPage extends React.Component {
   constructor(props: {}) {
     super(props);
     this.state = {};

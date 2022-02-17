@@ -4,8 +4,12 @@ import { Heading } from 'react-bulma-components';
 import {Queries, QueriesGetClusterArgs} from "../generated/graphql";
 import {ProcessView} from "./ProcessView";
 import {ClusterFragment, ProcessFragment} from "../gql/fragments";
+import {useParams} from "react-router-dom";
 
 export default function Cluster() {
+  let { reportId, clusterHash } = useParams<{reportId: string, clusterHash: string}>();
+  if (!reportId) throw new Error("Cluster page was rendered without report id param");
+  if (!clusterHash) throw new Error("Cluster page was rendered without cluster hash param");
   let { loading, error, data } = useQuery<Queries, QueriesGetClusterArgs>(
     gql`
       ${ClusterFragment}
@@ -16,7 +20,7 @@ export default function Cluster() {
         }
       }
     `,
-    { variables: { reportId: "test", structureHash: "test" } }
+    { variables: { reportId: reportId, structureHash: clusterHash } }
   );
   if (error) throw error;
   if (loading) return <Heading size={4}>Loading ...</Heading>;

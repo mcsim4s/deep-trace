@@ -65,7 +65,7 @@ object Main extends zio.App {
       )
     )
 
-    ZLayer.fromSomeMagic[ZEnv, Env](
+    ZLayer.wireSome[ZEnv, Env](
       jaegerClient,
       JaegerSource.layer,
       LiveReportStore.layer,

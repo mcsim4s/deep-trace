@@ -65,12 +65,18 @@ export type Queries = {
   __typename?: 'Queries';
   getCluster: TraceCluster;
   listReports?: Maybe<Array<AnalysisReport>>;
+  getReport?: Maybe<AnalysisReport>;
 };
 
 
 export type QueriesGetClusterArgs = {
   reportId: Scalars['String'];
   structureHash: Scalars['String'];
+};
+
+
+export type QueriesGetReportArgs = {
+  value: Scalars['String'];
 };
 
 export type State = Clustering | ClustersBuilt;

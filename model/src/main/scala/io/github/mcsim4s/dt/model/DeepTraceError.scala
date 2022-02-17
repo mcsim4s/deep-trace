@@ -2,7 +2,7 @@ package io.github.mcsim4s.dt.model
 
 import io.github.mcsim4s.dt.model.TraceCluster.ClusterId
 
-sealed abstract class DeepTraceError(msg: String) {
+sealed class DeepTraceError(msg: String) {
   def message = msg
 }
 

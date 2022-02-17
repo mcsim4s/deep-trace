@@ -2,64 +2,87 @@ package io.github.mcsim4s.dt.engine.live.store
 
 import io.github.mcsim4s.dt.engine.store.ClusterStore
 import io.github.mcsim4s.dt.engine.store.ClusterStore.ClusterStore
-import io.github.mcsim4s.dt.model.DeepTraceError.ClusterNotFound
-import io.github.mcsim4s.dt.model.{DeepTraceError, Process, TraceCluster}
+import io.github.mcsim4s.dt.model.DeepTraceError.{CasConflict, ClusterNotFound, ReportNotFound}
+import io.github.mcsim4s.dt.model.{AnalysisReport, DeepTraceError, Process, TraceCluster}
 import io.github.mcsim4s.dt.model.TraceCluster.{ClusterId, ClusterSource}
 import zio._
+import zio.clock.Clock
 import zio.random.Random
 import zio.stm._
 import zio.stream.ZStream
 
-class LiveClusterStore(clustersRef: TMap[String, Map[String, TraceCluster]]) extends ClusterStore.Service {
+class LiveClusterStore(clustersRef: TMap[String, Map[String, TraceCluster]], clock: Clock.Service)
+    extends ClusterStore.Service {
 
   override def get(id: ClusterId): IO[DeepTraceError.ClusterNotFound, TraceCluster] =
-    STM.atomically {
-      clustersRef
-        .get(id.reportId)
-        .flatMap(opt => ZSTM.fromOption(opt))
-        .orElseFail(ClusterNotFound(id))
-        .map(_.get(id.clusterHash))
-        .flatMap(opt => ZSTM.fromOption(opt))
-        .orElseFail(ClusterNotFound(id))
-    }
+    STM.atomically(getStm(id))
 
-  override def getOrCreate(reportId: String, process: => Process): UIO[TraceCluster] = {
+  private def getStm(id: ClusterId): ZSTM[Any, ClusterNotFound, TraceCluster] =
+    clustersRef
+      .get(id.reportId)
+      .flatMap(opt => ZSTM.fromOption(opt))
+      .orElseFail(ClusterNotFound(id))
+      .map(_.get(id.clusterHash))
+      .flatMap(opt => ZSTM.fromOption(opt))
+      .orElseFail(ClusterNotFound(id))
+
+  override def getOrCreate(clusterId: ClusterId): UIO[TraceCluster] = {
     STM.atomically(
       for {
-        opt <- clustersRef.get(reportId)
-        clusterId = ClusterId(reportId, process.id.hash)
+        opt <- clustersRef.get(clusterId.reportId)
         res <- opt match {
           case Some(clusters) =>
             clusters.get(clusterId.clusterHash) match {
               case Some(cluster) => STM.succeed(cluster)
               case None =>
-                val cluster = TraceCluster(clusterId, process)
+                val cluster = TraceCluster(clusterId, avgProcess = None)
                 clustersRef
                   .put(clusterId.reportId, clusters + (clusterId.clusterHash -> cluster))
                   .as(cluster)
             }
           case None =>
-            val cluster = TraceCluster(clusterId, process)
-            clustersRef.put(clusterId.reportId, Map(clusterId.reportId -> cluster)).as(cluster)
+            val cluster = TraceCluster(clusterId, avgProcess = None)
+            clustersRef.put(clusterId.reportId, Map(clusterId.clusterHash -> cluster)).as(cluster)
         }
       } yield res
     )
   }
 
-  override def read(reportId: String): ClusterSource = {
+  override def list(reportId: String): ClusterSource = {
     ZStream
       .fromEffect {
         STM.atomically(clustersRef.getOrElse(reportId, Map.empty)).map(_.values.iterator)
       }
       .flatMap(ZStream.fromIteratorTotal(_))
   }
+
+  override def update(id: ClusterId)(
+      upd: TraceCluster => IO[DeepTraceError, TraceCluster]
+  ): IO[DeepTraceError, TraceCluster] =
+    (for {
+      old <- get(id)
+      result <- upd(old)
+      _ <- updateCas(old, result)
+    } yield result).retry(CasRetryPolicy).provide(Has(clock))
+
+  private def updateCas(from: TraceCluster, to: TraceCluster): IO[DeepTraceError, TraceCluster] =
+    STM.atomically {
+      for {
+        old <- getStm(from.id)
+        _ <- STM.fail(CasConflict("Trace cluster", from.id.toString)).when(old != from)
+        oldMap <- clustersRef.get(from.id.reportId)
+        _ <- STM.dieMessage("Report map is empty in update").when(oldMap.isEmpty)
+        _ <- clustersRef.put(from.id.reportId, oldMap.get + (to.id.clusterHash -> to))
+      } yield to
+    }
 }
 
 object LiveClusterStore {
-  def makeService: ZIO[Any, Nothing, LiveClusterStore] =
+  def makeService: ZIO[Clock, Nothing, LiveClusterStore] =
     for {
       clustersRef <- STM.atomically(TMap.make[String, Map[String, TraceCluster]]())
-    } yield new LiveClusterStore(clustersRef)
+      clock <- ZIO.service[Clock.Service]
+    } yield new LiveClusterStore(clustersRef, clock)
 
-  val layer: ZLayer[Random, Nothing, ClusterStore] = makeService.toLayer
+  val layer: ZLayer[Clock, Nothing, ClusterStore] = makeService.toLayer
 }

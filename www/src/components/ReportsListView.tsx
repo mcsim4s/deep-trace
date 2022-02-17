@@ -4,21 +4,7 @@ import {gql, useQuery} from "@apollo/client";
 import {AnalysisReport, Queries, Scalars, Maybe} from "../generated/graphql";
 import {ApolloQueryResult} from "@apollo/client/core/types";
 import {ReportFragment} from "../gql/fragments";
-
-type CreateReportParam = {
-  serviceName: string;
-  operationName: string;
-  tags?: string;
-  minDuration?: string;
-  maxDuration?: string;
-  lookup: "1h" | "2h";
-}
-const initialValues: CreateReportParam = {
-  serviceName: "jaeger-query",
-  operationName: "/api/traces",
-  lookup: "1h"
-};
-
+import {Link} from "react-router-dom";
 
 const listReportsQuery = gql`
   ${ReportFragment}
@@ -47,9 +33,9 @@ export default function ReportsListView(props: ReportListProps) {
   return <>
     <Heading size={2}>Existing reports</Heading>
     {data?.listReports?.map((report) => {
-      return <Box key={report.id}>
-        {report.createdAt}
-      </Box>
+      return <Link to={`/report/${report.id}`} key={report.id}>
+        <Box>{report.createdAt}</Box>
+      </Link>
     })}
     <br/>
 

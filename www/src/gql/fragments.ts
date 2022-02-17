@@ -32,6 +32,15 @@ export const ProcessFragment = gql`
         ...ProcessFields,
         children {
             ...ProcessFields
+            children {
+                ...ProcessFields
+                children {
+                    ...ProcessFields
+                    children {
+                        ...ProcessFields
+                    }
+                }
+            }
         }
     }
 `

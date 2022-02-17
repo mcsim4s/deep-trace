@@ -6,7 +6,8 @@ import {ErrorBoundary, FallbackProps} from 'react-error-boundary';
 import './App.css';
 import 'bulma/css/bulma.min.css';
 import ScenarioPage from "./pages/ScenarioPage";
-import RoutesPage from "./pages/RoutesPage";
+import ReportsPage from "./pages/ReportsPage";
+import ReportPage from "./pages/ReportPage";
 
 function App() {
   return (
@@ -15,8 +16,9 @@ function App() {
       <Header/>
       <Section>
         <Routes>
-            <Route path="/" element={<RoutesPage />} />
-            <Route path="/reportId" element={<ScenarioPage />} />
+            <Route path="/report/:reportId" element={<ReportPage />}/>
+            <Route path="/cluster/:reportId/:clusterHash" element={<ScenarioPage />}/>
+            <Route path="/" element={<ReportsPage />}/>
         </Routes>
       </Section>
     </ErrorBoundary>

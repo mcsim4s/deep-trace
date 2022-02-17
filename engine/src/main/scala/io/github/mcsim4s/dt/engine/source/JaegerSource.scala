@@ -15,8 +15,12 @@ class JaegerSource(jaegerClient: QueryServiceClient.Service, clock: Clock.Servic
       val stream: ZStream[Any, io.grpc.Status, SpansResponseChunk] =
         jaegerClient.findTraces(FindTracesRequest(query = Some(query)))
       stream.mapBoth(
-        status => TraceRetrieveError(s"Jaeger trace stream failed with ${status}"),
-        chunk => RawTrace(chunk.spans)
+        status => {
+          TraceRetrieveError(s"Jaeger trace stream failed with $status")
+        },
+        chunk => {
+          RawTrace(chunk.spans)
+        }
       )
     }
 }

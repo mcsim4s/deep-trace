@@ -23,7 +23,8 @@ object Api extends GenericSchema[ApiService] {
   )
 
   case class ReportQueries(
-      listReports: RIO[ApiService, List[AnalysisReport]]
+      listReports: RIO[ApiService, List[AnalysisReport]],
+      getReport: String => RIO[ApiService, AnalysisReport]
   )
 
   case class ReportsMutations(
@@ -41,7 +42,8 @@ object Api extends GenericSchema[ApiService] {
   val reports: GraphQL[ApiService] = GraphQL.graphQL(
     RootResolver(
       ReportQueries(
-        listReports = ApiService.listReports().orDieWith(err => new IllegalStateException(err.message))
+        listReports = ApiService.listReports().orDieWith(err => new IllegalStateException(err.message)),
+        getReport = (id) => ApiService.getReport(id).orDieWith(err => new IllegalStateException(err.message))
       ),
       ReportsMutations(
         createReport =

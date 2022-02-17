@@ -1,10 +1,8 @@
 package io.github.mcsim4s.dt.engine.live.store
 
-import io.github.mcsim4s.dt.engine.live.store.LiveReportStore.CasRetryPolicy
 import io.github.mcsim4s.dt.engine.store.ReportStore
 import io.github.mcsim4s.dt.engine.store.ReportStore.ReportStore
 import io.github.mcsim4s.dt.model.DeepTraceError.{CasConflict, ReportNotFound}
-import io.github.mcsim4s.dt.model.TraceCluster.ClusterId
 import io.github.mcsim4s.dt.model.{AnalysisReport, AnalysisRequest, DeepTraceError}
 import zio._
 import zio.clock.Clock
@@ -23,7 +21,7 @@ class LiveReportStore(reportsRef: TMap[String, AnalysisReport], random: Random.S
         createdAt = now,
         service = request.service,
         operation = request.operation,
-        state = AnalysisReport.ClustersBuilt(Seq(ClusterId("test", "test")))
+        state = AnalysisReport.Clustering
       )
       _ <- STM.atomically(reportsRef.put(id, report))
     } yield report
@@ -56,12 +54,6 @@ class LiveReportStore(reportsRef: TMap[String, AnalysisReport], random: Random.S
 }
 
 object LiveReportStore {
-  private val CasRetryPolicy: Schedule[Any, DeepTraceError, (DeepTraceError, Long)] =
-    Schedule.recurWhile[DeepTraceError] {
-      case _: CasConflict => true
-      case _              => false
-    } && Schedule.recurs(3)
-
   def makeService: ZIO[Random with Clock, Nothing, LiveReportStore] =
     for {
       reportsRef <- STM.atomically(TMap.make[String, AnalysisReport]())
