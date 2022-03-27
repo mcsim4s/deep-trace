@@ -36,6 +36,8 @@ package object model {
     def toDuration: Duration = {
       Duration(instant.getEpochSecond, TimeUnit.SECONDS).plus(Duration(instant.getNano, TimeUnit.NANOSECONDS))
     }
+
+    def toTimeStamp: Timestamp = Timestamp.of(instant.getEpochSecond, instant.getNano)
   }
 
   implicit class RichDuration(val duration: com.google.protobuf.duration.Duration) {

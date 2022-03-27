@@ -1,12 +1,9 @@
 package io.github.mcsim4s.dt.model
 
-import zio.stream.ZStream
-
-case class Trace(structureRoot: Process) {
-  lazy val hash: String = structureRoot.hash
+case class Trace(spans: Map[String, ProcessStats]) {
+  def ++(other: Trace) = Trace(spans ++ other.spans)
 }
 
 object Trace {
-
-  type TraceSource = ZStream[Any, Nothing, Trace]
+  val empty: Trace = Trace(Map.empty)
 }

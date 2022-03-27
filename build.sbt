@@ -28,8 +28,8 @@ val model = (project in file("model"))
     libraryDependencies ++= Seq(
       library.openTelemetry,
       library.zio,
-      library.zioTest,
-      library.zioTestSbt
+      library.zioTest % Test,
+      library.zioTestSbt % Test
     )
   )
   .dependsOn(jaegerModel)
@@ -41,7 +41,9 @@ val engine = (project in file("engine"))
     libraryDependencies ++= Seq(
       library.zio,
       library.zioStreams,
-      library.zioMacro
+      library.zioMacro,
+      library.math,
+      library.zioMagic % Test
     )
   )
   .dependsOn(model)
@@ -77,6 +79,7 @@ lazy val library =
       val calibanVersion = "1.3.2"
       val zioHttpVersion = "1.0.0.0-RC22"
       val tapirZio = "0.20.0-M5"
+      val math = "3.6.1"
     }
     val openTelemetry =
       "io.opentelemetry" % "opentelemetry-api" % Version.openTelemetryVersion
@@ -98,6 +101,8 @@ lazy val library =
 
     val scalaPbRuntimeGrpc =
       "com.thesamet.scalapb" %% "scalapb-runtime-grpc" % VersionPb.scalapbVersion
+
+    val math = "org.apache.commons" % "commons-math3" % Version.math
   }
 
 // ***************************

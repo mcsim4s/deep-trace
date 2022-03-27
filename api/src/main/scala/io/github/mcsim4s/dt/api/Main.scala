@@ -3,8 +3,8 @@ package io.github.mcsim4s.dt.api
 import caliban.{CalibanError, ZHttpAdapter}
 import io.github.mcsim4s.dt.api.ApiService.ApiService
 import io.github.mcsim4s.dt.engine.Engine.Engine
-import io.github.mcsim4s.dt.engine.live.LiveEngine
 import io.github.mcsim4s.dt.engine.live.store.{LiveClusterStore, LiveProcessStore, LiveReportStore, LiveSpanStore}
+import io.github.mcsim4s.dt.engine.live.{LiveEngine, TraceParserLive}
 import io.github.mcsim4s.dt.engine.source.JaegerSource
 import io.github.mcsim4s.dt.engine.store.ClusterStore.ClusterStore
 import io.grpc.ManagedChannelBuilder
@@ -15,11 +15,10 @@ import zhttp.http.Method.OPTIONS
 import zhttp.http.Middleware.cors
 import zhttp.http._
 import zhttp.service.Server
-import zio.blocking.Blocking
-import zio.stream.ZStream
 import zio._
-import zio.console.Console
+import zio.blocking.Blocking
 import zio.magic._
+import zio.stream.ZStream
 
 object Main extends zio.App {
   type Env = ZEnv with Engine with Has[JaegerSource] with ClusterStore with ApiService
@@ -72,6 +71,7 @@ object Main extends zio.App {
       LiveClusterStore.layer,
       LiveProcessStore.layer,
       LiveSpanStore.layer,
+      TraceParserLive.layer,
       LiveEngine.layer,
       ApiService.live
     )

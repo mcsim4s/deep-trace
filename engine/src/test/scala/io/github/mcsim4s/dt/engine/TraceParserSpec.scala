@@ -1,15 +1,18 @@
-package io.github.mcsim4s.dt
-package model
-
-import model.mappers.RawTraceMappers
+package io.github.mcsim4s.dt.engine
 
 import com.google.protobuf.ByteString
+import io.github.mcsim4s.dt.engine.TraceParser.TraceParser
+import io.github.mcsim4s.dt.engine.live.TraceParserLive
+import io.github.mcsim4s.dt.engine.live.store.LiveSpanStore
+import io.github.mcsim4s.dt.model.RawTrace
 import io.jaegertracing.api_v2.model.{Span, SpanRef, SpanRefType}
-import zio.test.Assertion._
+import zio.ZLayer
+import zio.test.Assertion.{equalTo, hasField, hasSize}
 import zio.test.environment.TestEnvironment
-import zio.test._
+import zio.test.{DefaultRunnableSpec, ZSpec, assert, assertM}
+import zio.magic._
 
-object RawTraceMappersSpec extends DefaultRunnableSpec {
+object TraceParserSpec extends DefaultRunnableSpec {
 
   val singleSpanTrace: RawTrace = RawTrace(
     Seq(
@@ -50,19 +53,24 @@ object RawTraceMappersSpec extends DefaultRunnableSpec {
     suite("Trace conversions spec")(
       testM("convert singe span raw trace to trace") {
         assertM(
-          RawTraceMappers
-            .fromRaw(singleSpanTrace)
+          TraceParser
+            .parse(singleSpanTrace)
 //            .tap(trace => zio.console.putStrLn(trace.toString))
         )(hasField("operation", _.operation, equalTo("single operation")))
       },
       testM("Convert one child raw trace to trace") {
         for {
           process <-
-            RawTraceMappers
-              .fromRaw(singleChildTrace)
+            TraceParser
+              .parse(singleChildTrace)
               .tap(trace => zio.console.putStrLn(trace.toString))
         } yield assert(process.children)(hasSize(equalTo(1)))
       }
+    ).provideCustomLayerShared(
+      ZLayer.wireSome[TestEnvironment, TestEnvironment with TraceParser](
+        LiveSpanStore.layer,
+        TraceParserLive.layer
+      )
     )
 
 }

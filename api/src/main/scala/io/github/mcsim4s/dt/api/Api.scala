@@ -67,7 +67,9 @@ object Api extends GenericSchema[ApiService] {
             .tap {
               case (processTime, response) =>
                 ZIO.when(response.errors.isEmpty)(
-                  putStrLn(s"${request.operationName} is performed in ${processTime.toMillis}ms").orDie
+                  putStrLn(
+                    s"${request.operationName.getOrElse("EMPTY")} is performed in ${processTime.toMillis}ms"
+                  ).orDie
                 )
             }
             .map(_._2)

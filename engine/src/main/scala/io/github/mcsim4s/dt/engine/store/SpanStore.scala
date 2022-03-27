@@ -11,5 +11,6 @@ object SpanStore {
 
   trait Service {
     def add(processId: ProcessId, span: Span): UIO[Unit]
+    def list(processId: ProcessId): UIO[List[Span]]
   }
 }

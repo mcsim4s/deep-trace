@@ -12,7 +12,7 @@ object ClusterStore {
 
   trait Service {
     def get(id: ClusterId): IO[ClusterNotFound, TraceCluster]
-    def getOrCreate(clusterId: ClusterId): UIO[TraceCluster]
+    def getOrCreate(reportId: String, root: Process): UIO[TraceCluster]
     def list(reportId: String): ClusterSource
     def update(id: ClusterId)(upd: TraceCluster => IO[DeepTraceError, TraceCluster]): IO[DeepTraceError, TraceCluster]
   }

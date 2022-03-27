@@ -22,27 +22,28 @@ class LiveClusterStore(clustersRef: TMap[String, Map[String, TraceCluster]], clo
       .get(id.reportId)
       .flatMap(opt => ZSTM.fromOption(opt))
       .orElseFail(ClusterNotFound(id))
-      .map(_.get(id.clusterHash))
+      .map(_.get(id.rootHash))
       .flatMap(opt => ZSTM.fromOption(opt))
       .orElseFail(ClusterNotFound(id))
 
-  override def getOrCreate(clusterId: ClusterId): UIO[TraceCluster] = {
+  override def getOrCreate(reportId: String, root: Process): UIO[TraceCluster] = {
+    val clusterId = ClusterId(reportId, root.id.hash)
     STM.atomically(
       for {
         opt <- clustersRef.get(clusterId.reportId)
         res <- opt match {
           case Some(clusters) =>
-            clusters.get(clusterId.clusterHash) match {
+            clusters.get(clusterId.rootHash) match {
               case Some(cluster) => STM.succeed(cluster)
               case None =>
-                val cluster = TraceCluster(clusterId, avgProcess = None)
+                val cluster = TraceCluster(clusterId, root, avg = None)
                 clustersRef
-                  .put(clusterId.reportId, clusters + (clusterId.clusterHash -> cluster))
+                  .put(clusterId.reportId, clusters + (clusterId.rootHash -> cluster))
                   .as(cluster)
             }
           case None =>
-            val cluster = TraceCluster(clusterId, avgProcess = None)
-            clustersRef.put(clusterId.reportId, Map(clusterId.clusterHash -> cluster)).as(cluster)
+            val cluster = TraceCluster(clusterId, root, avg = None)
+            clustersRef.put(clusterId.reportId, Map(clusterId.rootHash -> cluster)).as(cluster)
         }
       } yield res
     )
@@ -72,7 +73,7 @@ class LiveClusterStore(clustersRef: TMap[String, Map[String, TraceCluster]], clo
         _ <- STM.fail(CasConflict("Trace cluster", from.id.toString)).when(old != from)
         oldMap <- clustersRef.get(from.id.reportId)
         _ <- STM.dieMessage("Report map is empty in update").when(oldMap.isEmpty)
-        _ <- clustersRef.put(from.id.reportId, oldMap.get + (to.id.clusterHash -> to))
+        _ <- clustersRef.put(from.id.reportId, oldMap.get + (to.id.rootHash -> to))
       } yield to
     }
 }

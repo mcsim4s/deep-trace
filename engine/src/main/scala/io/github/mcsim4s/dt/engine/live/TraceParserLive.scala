@@ -1,23 +1,20 @@
-package io.github.mcsim4s.dt.model.mappers
+package io.github.mcsim4s.dt.engine.live
 
-import com.google.protobuf.ByteString
-import com.google.protobuf.duration.Duration
-import com.google.protobuf.timestamp.Timestamp
+import io.github.mcsim4s.dt.engine.TraceParser
+import io.github.mcsim4s.dt.engine.TraceParser.{ParentToChild, RawSpanId, TraceParser}
+import io.github.mcsim4s.dt.engine.store.SpanStore
+import io.github.mcsim4s.dt.engine.store.SpanStore.SpanStore
+import io.github.mcsim4s.dt.model
 import io.github.mcsim4s.dt.model.DeepTraceError.RawTraceMappingError
-import io.github.mcsim4s.dt.model.Process.ProcessId
-import io.github.mcsim4s.dt.model.{Process, RawTrace, Trace}
-import io.github.mcsim4s.dt.model._
+import io.github.mcsim4s.dt.model.{DeepTraceError, Process, RawTrace, _}
 import io.jaegertracing.api_v2.model.Span
+import zio._
 import zio.random.Random
-import zio.{IO, Ref, ZIO}
 
 import java.time.Instant
 
-object RawTraceMappers {
-  type RawSpanId = ByteString
-  type ParentToChild = Map[RawSpanId, Seq[RawSpanId]]
-
-  def fromRaw(rawTrace: RawTrace): ZIO[Random, RawTraceMappingError, Process] = {
+class TraceParserLive(spanStore: SpanStore.Service, random: Random.Service) extends TraceParser.Service {
+  override def parse(rawTrace: RawTrace): IO[DeepTraceError.RawTraceMappingError, model.Process] = {
     def updateRootRef(ref: Ref[Option[Span]], span: Span) =
       ref.set(Some(span)).when(!span.references.exists(_.refType.isChildOf))
 
@@ -49,18 +46,23 @@ object RawTraceMappers {
       spans: Map[RawSpanId, Span],
       parentToChildMap: ParentToChild,
       startTime: Instant
-  ): ZIO[Random, RawTraceMappingError, Process] =
+  ): IO[RawTraceMappingError, Process] =
     for {
       children <- ZIO.foreach(parentToChildMap.getOrElse(span.spanId, Seq.empty)) { child =>
         fromSpan(spans(child), spans, parentToChildMap, startTime)
       }
-      id <- ZIO.accessM[Random](_.get.nextUUID)
-    } yield Process(
-      id = ProcessId(id.toString),
-      service = span.getProcess.serviceName,
-      operation = span.operationName,
-      start = span.getStartTime.toInstant.minus(startTime).toDuration,
-      duration = span.getDuration.asScala,
-      children = children
-    )
+      result = Process(
+        service = span.getProcess.serviceName,
+        operation = span.operationName,
+        children = children
+      )
+      start = span.getStartTime.toInstant.minus(startTime).toTimeStamp
+      fixedStart = span.copy(startTime = Some(start))
+      _ <- spanStore.add(result.id, fixedStart)
+    } yield result
+}
+
+object TraceParserLive {
+  val layer: URLayer[SpanStore with Random, TraceParser] =
+    ZLayer.fromServices[SpanStore.Service, Random.Service, TraceParser.Service](new TraceParserLive(_, _))
 }
