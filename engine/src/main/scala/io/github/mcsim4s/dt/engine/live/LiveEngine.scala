@@ -30,12 +30,18 @@ class LiveEngine(
   override def process(request: AnalysisRequest): IO[DeepTraceError, AnalysisReport] = {
     for {
       report <- reportStore.create(request)
-      _ <- parseTraces(report, request.traceSource).flatMap { clusters =>
-        ZIO.foreach(clusters)(processCluster) *>
-          reportStore.update(report.id) { _ =>
-            ZIO.succeed(report.copy(state = AnalysisReport.ClustersBuilt(clusters.map(_.id))))
-          }
-      }.forkDaemon
+      _ <- parseTraces(report, request.traceSource)
+        .flatMap { clusters =>
+          ZIO.foreach_(clusters)(processCluster) *>
+            reportStore.update(report.id) { _ =>
+              ZIO.succeed(report.copy(state = AnalysisReport.ClustersBuilt(clusters.map(_.id))))
+            }
+        }
+        .tapBoth(
+          err => console.putStrLnErr(s"Async clustering error. Err: $err").ignore,
+          _ => console.putStrLn("Async clustering complete").ignore
+        )
+        .forkDaemon
     } yield report
   }
 
