@@ -81,7 +81,7 @@ class LiveEngine(
         }
         Duration.fromNanos(start.getMean) -> Duration.fromNanos(duration.getMean)
       }
-      stats = ProcessStats(avgStart, avgDuration)
+      stats = ProcessStats(avgStart, avgDuration, spans.map(_.getDuration.asScala))
       children <-
         if (process.children.nonEmpty) {
           ZIO

@@ -27,9 +27,12 @@ export const ProcessFragment = gql`
         id,
         service,
         operation,
-        start,
-        duration,
-        parentId
+        parentId,
+        stats {
+            avgStart,
+            avgDuration,
+            allDurations
+        }
     }
 `
 

@@ -35,14 +35,13 @@ export default function ReportsListView(props: ReportListProps) {
   return <>
     <Heading size={2}>Existing reports</Heading>
     <Block>
-    {data.listReports?.map((report) => {
-      const created = new Date(Date.parse(report.createdAt));
-      return <Link to={`/report/${report.id}`} key={report.id} className="box">
-        {report.service} --- {report.operation} --- {created.toLocaleString()} -------- {report.state.__typename}
-      </Link>
-    })}
+      {data.listReports?.map((report) => {
+        const created = new Date(Date.parse(report.createdAt));
+        return <Link to={`/report/${report.id}`} key={report.id} className="box">
+          {report.service} --- {report.operation} --- {created.toLocaleString()} -------- {report.state.__typename}
+        </Link>
+      })}
     </Block>
     <br/>
-
   </>;
 }

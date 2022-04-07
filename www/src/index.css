@@ -27,8 +27,27 @@ code {
 
 .process-bar-container {
   background: #fff;
+  cursor: pointer;
+  padding: .6rem 2px !important;
+}
+
+.process-bar-container .level {
+ height: 100%;
 }
 
 .process-heading {
   background: #ddd;
+}
+
+.process-bar-container:hover {
+  background: #d6d6d6;
+}
+
+.process-container {
+  border-bottom: #eeeeee;
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+}
+.process-container:last-of-type {
+  border-bottom: #dddddd;
 }

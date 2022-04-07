@@ -1,12 +1,11 @@
 package io.github.mcsim4s.dt.api.model
 
-import scala.concurrent.duration.Duration
+import io.github.mcsim4s.dt.model.ProcessStats
 
 case class Process(
     id: String,
     service: String,
     operation: String,
-    start: Duration,
-    duration: Duration,
-    parentId: Option[String]
+    parentId: Option[String],
+    stats: ProcessStats
 )

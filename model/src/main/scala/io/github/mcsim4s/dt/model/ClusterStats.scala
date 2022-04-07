@@ -1,7 +1,7 @@
 package io.github.mcsim4s.dt.model
 
-case class ClusterStats(spans: Map[String, ProcessStats]) {
-  def ++(other: ClusterStats) = ClusterStats(spans ++ other.spans)
+case class ClusterStats(processes: Map[String, ProcessStats]) {
+  def ++(other: ClusterStats) = ClusterStats(processes ++ other.processes)
 }
 
 object ClusterStats {

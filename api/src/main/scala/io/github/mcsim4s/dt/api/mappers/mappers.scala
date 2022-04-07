@@ -30,18 +30,17 @@ package object mappers {
       case AnalysisReport.ClustersBuilt(clusterIds) => ApiReport.ClustersBuilt(clusterIds.map(toApi))
     }
 
-  def toApi(process: Process, trace: ClusterStats, parent: Option[String] = None): Map[String, ApiProcess] = {
+  def toApi(process: Process, stats: ClusterStats, parent: Option[String] = None): Map[String, ApiProcess] = {
     val current = ApiProcess(
       id = process.id.hash,
       service = process.service,
       operation = process.operation,
-      start = trace.spans(process.id.hash).avgStart,
-      duration = trace.spans(process.id.hash).avgDuration,
-      parentId = parent
+      parentId = parent,
+      stats = stats.processes(process.id.hash)
     )
     process.children.foldLeft(Map(current.id -> current)) {
       case (acc, child) =>
-        acc ++ toApi(child, trace, parent = Some(current.id))
+        acc ++ toApi(child, stats, parent = Some(current.id))
     }
   }
 

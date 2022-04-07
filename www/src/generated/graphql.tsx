@@ -68,9 +68,15 @@ export type Process = {
   id: Scalars['String'];
   service: Scalars['String'];
   operation: Scalars['String'];
-  start: Scalars['Duration'];
-  duration: Scalars['Duration'];
   parentId?: Maybe<Scalars['String']>;
+  stats: ProcessStats;
+};
+
+export type ProcessStats = {
+  __typename?: 'ProcessStats';
+  avgStart: Scalars['Duration'];
+  avgDuration: Scalars['Duration'];
+  allDurations: Array<Scalars['Duration']>;
 };
 
 export type Queries = {
