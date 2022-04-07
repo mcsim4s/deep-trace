@@ -5,6 +5,7 @@ import {Queries, QueriesGetClusterArgs} from "../generated/graphql";
 import {ProcessView} from "./ProcessView";
 import {ClusterFragment, ProcessFragment} from "../gql/fragments";
 import {useParams} from "react-router-dom";
+import {Trace} from "../utils/Trace";
 
 export default function Cluster() {
   let { reportId, clusterHash } = useParams<{reportId: string, clusterHash: string}>();
@@ -26,13 +27,13 @@ export default function Cluster() {
   if (loading) return <Heading size={4}>Loading ...</Heading>;
   if (!data) throw new Error("no data");
 
-  const root = data.getCluster.rootProcess;
+  const trace = new Trace(data.getCluster.processes);
 
   return <>
     <div>
-      <Heading size={3}>{root.service} : {root.operation}</Heading>
+      <Heading size={3}>{trace.root.service} : {trace.root.operation}</Heading>
       <Heading subtitle={true} size={6}>{data.getCluster.id.structureHash}</Heading>
-      <ProcessView root={data.getCluster.rootProcess} current={data.getCluster.rootProcess}/>
+      <ProcessView trace={trace} current={trace.root}/>
     </div>
   </>;
 };

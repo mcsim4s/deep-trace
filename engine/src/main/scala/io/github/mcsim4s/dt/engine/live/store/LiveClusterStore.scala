@@ -36,13 +36,13 @@ class LiveClusterStore(clustersRef: TMap[String, Map[String, TraceCluster]], clo
             clusters.get(clusterId.rootHash) match {
               case Some(cluster) => STM.succeed(cluster)
               case None =>
-                val cluster = TraceCluster(clusterId, root, avg = None)
+                val cluster = TraceCluster(clusterId, root, stats = None)
                 clustersRef
                   .put(clusterId.reportId, clusters + (clusterId.rootHash -> cluster))
                   .as(cluster)
             }
           case None =>
-            val cluster = TraceCluster(clusterId, root, avg = None)
+            val cluster = TraceCluster(clusterId, root, stats = None)
             clustersRef.put(clusterId.reportId, Map(clusterId.rootHash -> cluster)).as(cluster)
         }
       } yield res

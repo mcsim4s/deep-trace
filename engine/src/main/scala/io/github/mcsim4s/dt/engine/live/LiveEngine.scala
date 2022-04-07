@@ -65,11 +65,11 @@ class LiveEngine(
       .update(cluster.id) { old =>
         avgTrace(old.root)
           .map { trace =>
-            old.copy(avg = Some(trace))
+            old.copy(stats = Some(trace))
           }
       }
 
-  def avgTrace(process: Process): IO[DeepTraceError, Trace] =
+  def avgTrace(process: Process): IO[DeepTraceError, ClusterStats] =
     for {
       spans <- spanStore.list(process.id)
       (avgStart, avgDuration) = {
@@ -87,9 +87,9 @@ class LiveEngine(
           ZIO
             .foreach(process.children)(avgTrace)
             .map(_.reduce(_ ++ _))
-        } else IO.succeed(Trace.empty)
+        } else IO.succeed(ClusterStats.empty)
 
-    } yield Trace(Map(process.id.hash -> stats)) ++ children
+    } yield ClusterStats(Map(process.id.hash -> stats)) ++ children
 }
 
 object LiveEngine {

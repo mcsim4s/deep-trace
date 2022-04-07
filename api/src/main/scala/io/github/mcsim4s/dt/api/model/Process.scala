@@ -8,5 +8,5 @@ case class Process(
     operation: String,
     start: Duration,
     duration: Duration,
-    children: Seq[Process]
+    parentId: Option[String]
 )

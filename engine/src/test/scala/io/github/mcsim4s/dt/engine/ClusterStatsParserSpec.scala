@@ -12,7 +12,7 @@ import zio.test.environment.TestEnvironment
 import zio.test.{DefaultRunnableSpec, ZSpec, assert, assertM}
 import zio.magic._
 
-object TraceParserSpec extends DefaultRunnableSpec {
+object ClusterStatsParserSpec extends DefaultRunnableSpec {
 
   val singleSpanTrace: RawTrace = RawTrace(
     Seq(

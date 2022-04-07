@@ -2,9 +2,10 @@ import React from "react";
 import {Process} from "../generated/graphql";
 import {Section, Level, Columns} from "react-bulma-components";
 import {format} from "../utils/nanos";
+import {Trace} from "../utils/Trace";
 
 type ViewState = {
-  root: Process,
+  trace: Trace,
   current: Process
 }
 const LegendSize = 2;
@@ -12,9 +13,9 @@ const LegendSize = 2;
 class Bar extends React.Component<ViewState> {
 
   render() {
-    const {current, root} = this.props;
-    const left = ((current.start / this.props.root.duration) * 100).toFixed(1)
-    let  width = ((current.duration / this.props.root.duration) * 100).toFixed(1)
+    const {current, trace} = this.props;
+    const left = ((current.start / this.props.trace.root.duration) * 100).toFixed(1)
+    let  width = ((current.duration / this.props.trace.root.duration) * 100).toFixed(1)
 
     const startTime = format(current.start)
     const duration = format(current.duration)
@@ -31,8 +32,8 @@ class Bar extends React.Component<ViewState> {
           </Level>
         </Columns.Column>
       </Columns>
-      {current.children?.map(child => {
-        return <Bar key={child.id} root={this.props.root} current={child}/>
+      {trace.childrenOf(current).map(child => {
+        return <Bar key={child.id} trace={this.props.trace} current={child}/>
       })}
     </>;
   }
@@ -50,7 +51,7 @@ export class ProcessView extends React.Component<ViewState> {
           </Level>
         </Columns.Column>
       </Columns>
-      <Bar root={this.props.root} current={this.props.current} key={this.props.root.id}/>
+      <Bar trace={this.props.trace} current={this.props.current} key={this.props.trace.root.id}/>
     </>;
   }
 }

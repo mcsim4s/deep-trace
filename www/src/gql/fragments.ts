@@ -28,23 +28,8 @@ export const ProcessFragment = gql`
         service,
         operation,
         start,
-        duration
-    }
-
-    fragment ProcessRecursive on Process {
-        ...ProcessFields,
-        children {
-            ...ProcessFields
-            children {
-                ...ProcessFields
-                children {
-                    ...ProcessFields
-                    children {
-                        ...ProcessFields
-                    }
-                }
-            }
-        }
+        duration,
+        parentId
     }
 `
 
@@ -55,8 +40,11 @@ export const ClusterFragment = gql`
             reportId,
             structureHash
         },
-        rootProcess {
-            ...ProcessRecursive
+        processes {
+            key,
+            value {
+                ...ProcessFields
+            }
         }
     }
 `

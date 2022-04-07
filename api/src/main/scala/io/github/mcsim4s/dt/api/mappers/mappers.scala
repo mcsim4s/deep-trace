@@ -1,6 +1,6 @@
 package io.github.mcsim4s.dt.api
 
-import io.github.mcsim4s.dt.model.{AnalysisReport, AnalysisRequest, DeepTraceError, Process, Trace, TraceCluster}
+import io.github.mcsim4s.dt.model.{AnalysisReport, AnalysisRequest, DeepTraceError, Process, ClusterStats, TraceCluster}
 import io.github.mcsim4s.dt.model._
 import io.github.mcsim4s.dt.api.model.{
   AnalysisReport => ApiReport,
@@ -30,25 +30,30 @@ package object mappers {
       case AnalysisReport.ClustersBuilt(clusterIds) => ApiReport.ClustersBuilt(clusterIds.map(toApi))
     }
 
-  def toApi(process: Process, trace: Trace): ApiProcess =
-    ApiProcess(
+  def toApi(process: Process, trace: ClusterStats, parent: Option[String] = None): Map[String, ApiProcess] = {
+    val current = ApiProcess(
       id = process.id.hash,
       service = process.service,
       operation = process.operation,
       start = trace.spans(process.id.hash).avgStart,
       duration = trace.spans(process.id.hash).avgDuration,
-      children = process.children.map(child => toApi(child, trace))
+      parentId = parent
     )
+    process.children.foldLeft(Map(current.id -> current)) {
+      case (acc, child) =>
+        acc ++ toApi(child, trace, parent = Some(current.id))
+    }
+  }
 
   def toApi(cluster: TraceCluster): IO[DeepTraceError, ApiCluster] = {
     for {
       avg <-
         ZIO
-          .fromOption(cluster.avg)
+          .fromOption(cluster.stats)
           .orElseFail(new DeepTraceError("Avg Process was empty on cluster request"))
     } yield ApiCluster(
       id = toApi(cluster.id),
-      rootProcess = toApi(cluster.root, avg)
+      processes = toApi(cluster.root, avg)
     )
   }
 

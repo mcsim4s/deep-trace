@@ -43,6 +43,15 @@ export type ClustersBuilt = {
 
 
 
+/** A key-value pair of String and Process */
+export type KvStringProcess = {
+  __typename?: 'KVStringProcess';
+  /** Key */
+  key: Scalars['String'];
+  /** Value */
+  value: Process;
+};
+
 export type Mutations = {
   __typename?: 'Mutations';
   createReport?: Maybe<AnalysisReport>;
@@ -61,7 +70,7 @@ export type Process = {
   operation: Scalars['String'];
   start: Scalars['Duration'];
   duration: Scalars['Duration'];
-  children: Array<Process>;
+  parentId?: Maybe<Scalars['String']>;
 };
 
 export type Queries = {
@@ -87,7 +96,7 @@ export type State = Clustering | ClustersBuilt;
 export type TraceCluster = {
   __typename?: 'TraceCluster';
   id: ClusterId;
-  rootProcess: Process;
+  processes: Array<KvStringProcess>;
 };
 
 export type TraceQueryInput = {
