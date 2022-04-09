@@ -1,19 +1,34 @@
 package io.github.mcsim4s.dt.model
 
 import io.github.mcsim4s.dt.model.TraceCluster.ClusterId
+import io.grpc.Status
 
-sealed class DeepTraceError(msg: String) {
-  def message = msg
+import scala.language.implicitConversions
+
+sealed trait DeepTraceError {
+  def message: String
 }
 
 object DeepTraceError {
-  case class RawTraceMappingError(msg: String) extends DeepTraceError(msg)
+  case class GenericError(message: String) extends DeepTraceError
 
-  case class TraceRetrieveError(msg: String) extends DeepTraceError(msg)
+  case class RawTraceMappingError(message: String) extends DeepTraceError
 
-  case class ReportNotFound(id: String) extends DeepTraceError(s"Analysis report with id: $id not found")
+  case class TraceRetrieveError(message: String) extends DeepTraceError
 
-  case class ClusterNotFound(id: ClusterId) extends DeepTraceError(s"Cluster with id: $id not found")
+  case class ExternalGrpcError(service: String, status: Status) extends DeepTraceError {
+    val message = s"Grpc service '$service' call error. Status: $status"
+  }
 
-  case class CasConflict(entityType: String, id: String) extends DeepTraceError(s"$entityType update conflict for $id")
+  case class ReportNotFound(id: String) extends DeepTraceError {
+    val message = s"Analysis report with id: $id not found"
+  }
+
+  case class ClusterNotFound(id: ClusterId) extends DeepTraceError {
+    val message = s"Cluster with id: $id not found"
+  }
+
+  case class CasConflict(entityType: String, id: String) extends DeepTraceError {
+    val message = s"$entityType update conflict for $id"
+  }
 }

@@ -1,6 +1,6 @@
 package io.github.mcsim4s.dt.api
 
-import io.github.mcsim4s.dt.model.{AnalysisReport, AnalysisRequest, DeepTraceError, Process, ClusterStats, TraceCluster}
+import io.github.mcsim4s.dt.model.{AnalysisReport, AnalysisRequest, ClusterStats, DeepTraceError, Process, TraceCluster}
 import io.github.mcsim4s.dt.model._
 import io.github.mcsim4s.dt.api.model.{
   AnalysisReport => ApiReport,
@@ -9,6 +9,7 @@ import io.github.mcsim4s.dt.api.model.{
   Process => ApiProcess,
   TraceCluster => ApiCluster
 }
+import io.github.mcsim4s.dt.model.DeepTraceError.GenericError
 import io.github.mcsim4s.dt.model.TraceCluster.ClusterId
 import zio._
 
@@ -49,7 +50,7 @@ package object mappers {
       avg <-
         ZIO
           .fromOption(cluster.stats)
-          .orElseFail(new DeepTraceError("Avg Process was empty on cluster request"))
+          .orElseFail(GenericError("Avg Process was empty on cluster request"))
     } yield ApiCluster(
       id = toApi(cluster.id),
       processes = toApi(cluster.root, avg)

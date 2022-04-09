@@ -1,19 +1,21 @@
 package io.github.mcsim4s.dt.api
 
 import caliban.Value.IntValue.LongNumber
-import caliban.schema.{GenericSchema, Schema}
-import caliban.wrappers.Wrapper._
-import caliban.wrappers.Wrappers._
 import caliban._
+import caliban.schema.{GenericSchema, Schema}
+import caliban.wrappers.Wrappers._
 import io.github.mcsim4s.dt.api.ApiService.ApiService
-import io.github.mcsim4s.dt.api.model.{AnalysisRequest, ClusterId, TraceCluster, AnalysisReport}
+import io.github.mcsim4s.dt.api.model.{AnalysisReport, AnalysisRequest, ClusterId, TraceCluster}
+import io.github.mcsim4s.dt.api.services._
+import io.github.mcsim4s.dt.api.services.jaeger.JaegerService
+import io.github.mcsim4s.dt.api.services.jaeger.JaegerService.JaegerService
 import zio.clock.Clock
-import zio.console.{Console, putStrLn}
-import zio.{RIO, URIO, ZIO}
+import zio.console.Console
+import zio.{RIO, URIO}
 
 import scala.concurrent.duration.Duration
 
-object Api extends GenericSchema[ApiService] {
+object Api extends GenericSchema[ApiService with JaegerService] {
   implicit val stateSchema = Schema.gen[Any, AnalysisReport.State]
   implicit lazy val durationSchema: Schema[Any, Duration] =
     scalarSchema("Duration", None, None, duration => LongNumber(duration.toNanos))
@@ -31,7 +33,7 @@ object Api extends GenericSchema[ApiService] {
       createReport: AnalysisRequest => RIO[ApiService, AnalysisReport]
   )
 
-  val clusters: GraphQL[ApiService] = GraphQL.graphQL(
+  val clusters: GraphQL[ApiService with JaegerService] = GraphQL.graphQL(
     RootResolver(
       ClusterQueries(
         getCluster = id => ApiService.getCluster(id).orDieWith(err => new IllegalStateException(err.message))
@@ -39,7 +41,7 @@ object Api extends GenericSchema[ApiService] {
     )
   )
 
-  val reports: GraphQL[ApiService] = GraphQL.graphQL(
+  val reports: GraphQL[ApiService with JaegerService] = GraphQL.graphQL(
     RootResolver(
       ReportQueries(
         listReports = ApiService.listReports().orDieWith(err => new IllegalStateException(err.message)),
@@ -52,26 +54,11 @@ object Api extends GenericSchema[ApiService] {
     )
   )
 
-  val root: GraphQL[ApiService with Console with Clock] = Seq(
-    clusters,
-    reports
-  ).reduce(_ |+| _).rename(Some("Queries"), Some("Mutations"), Some("Subscriptions")) @@ printErrors @@ logging
+  val jaegerService: GraphQL[ApiService with JaegerService] = GraphQL.graphQL(RootResolver(JaegerService.queries))
 
-  lazy val logging: OverallWrapper[Console with Clock] =
-    new OverallWrapper[Console with Clock] {
-      def wrap[R1 <: Console with Clock](
-          process: GraphQLRequest => ZIO[R1, Nothing, GraphQLResponse[CalibanError]]
-      ): GraphQLRequest => ZIO[R1, Nothing, GraphQLResponse[CalibanError]] =
-        request =>
-          process(request).timed
-            .tap {
-              case (processTime, response) =>
-                ZIO.when(response.errors.isEmpty)(
-                  putStrLn(
-                    s"${request.operationName.getOrElse("EMPTY")} is performed in ${processTime.toMillis}ms"
-                  ).orDie
-                )
-            }
-            .map(_._2)
-    }
+  val root: GraphQL[ApiService with JaegerService with Console with Clock] = Seq(
+    clusters,
+    reports,
+    jaegerService
+  ).reduce(_ |+| _).rename(Some("Queries"), Some("Mutations"), Some("Subscriptions")) @@ printErrors @@ logging
 }
