@@ -31,11 +31,18 @@ export default function ReportsListView(props: ReportListProps) {
   if (loading) return <Heading>Loading ...</Heading>;
   if (!data) throw new Error("No Data");
 
+  const reports = data.listReports?.sort((a, b) => {
+    const ad = Date.parse(a.createdAt)
+    const bd = Date.parse(b.createdAt)
+    return bd - ad;
+  })
+
+  console.log(reports)
 
   return <>
     <Heading size={2}>Existing reports</Heading>
     <Block>
-      {data.listReports?.map((report) => {
+      {reports?.map((report) => {
         const created = new Date(Date.parse(report.createdAt));
         return <Link to={`/report/${report.id}`} key={report.id} className="box">
           {report.service} --- {report.operation} --- {created.toLocaleString()} -------- {report.state.__typename}
