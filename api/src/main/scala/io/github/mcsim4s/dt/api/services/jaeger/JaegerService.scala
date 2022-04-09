@@ -20,8 +20,8 @@ object JaegerService {
         services <-
           jaegerClient
             .getServices(GetServicesRequest())
-            .mapError(s => ExternalGrpcError("jaeger", s))
-        operations <- request.serviceName match {
+            .mapBoth(s => ExternalGrpcError("jaeger", s), _.services)
+        operations <- request.serviceName.orElse(services.headOption) match {
           case Some(value) =>
             jaegerClient
               .getOperations(GetOperationsRequest(service = value))
@@ -30,7 +30,7 @@ object JaegerService {
         }
 
       } yield SuggestResponse(
-        services = services.services,
+        services = services,
         operations = operations.map(OperationSuggest.apply)
       )
   }

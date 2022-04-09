@@ -63,6 +63,12 @@ export type MutationsCreateReportArgs = {
   params: TraceQueryInput;
 };
 
+export type OperationSuggest = {
+  __typename?: 'OperationSuggest';
+  name: Scalars['String'];
+  kind: Scalars['String'];
+};
+
 export type Process = {
   __typename?: 'Process';
   id: Scalars['String'];
@@ -84,6 +90,7 @@ export type Queries = {
   getCluster: TraceCluster;
   listReports?: Maybe<Array<AnalysisReport>>;
   getReport?: Maybe<AnalysisReport>;
+  suggest: SuggestResponse;
 };
 
 
@@ -97,7 +104,18 @@ export type QueriesGetReportArgs = {
   value: Scalars['String'];
 };
 
+
+export type QueriesSuggestArgs = {
+  serviceName?: Maybe<Scalars['String']>;
+};
+
 export type State = Clustering | ClustersBuilt;
+
+export type SuggestResponse = {
+  __typename?: 'SuggestResponse';
+  services: Array<Scalars['String']>;
+  operations: Array<OperationSuggest>;
+};
 
 export type TraceCluster = {
   __typename?: 'TraceCluster';

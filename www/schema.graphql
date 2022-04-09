@@ -1,0 +1,93 @@
+# This file was generated based on ".graphqlconfig". Do not edit manually.
+
+schema {
+    query: Queries
+    mutation: Mutations
+}
+
+union State = Clustering | ClustersBuilt
+
+type AnalysisReport {
+    createdAt: Instant!
+    id: String!
+    operation: String!
+    service: String!
+    state: State!
+}
+
+type ClusterId {
+    reportId: String!
+    structureHash: String!
+}
+
+type Clustering {
+    "Fake field because GraphQL does not support empty objects. Do not query, use __typename instead."
+    _: Boolean
+}
+
+type ClustersBuilt {
+    clusterIds: [ClusterId!]!
+}
+
+"A key-value pair of String and Process"
+type KVStringProcess {
+    "Key"
+    key: String!
+    "Value"
+    value: Process!
+}
+
+type Mutations {
+    createReport(params: TraceQueryInput!, sourceId: String!): AnalysisReport
+}
+
+type OperationSuggest {
+    kind: String!
+    name: String!
+}
+
+type Process {
+    id: String!
+    operation: String!
+    parentId: String
+    service: String!
+    stats: ProcessStats!
+}
+
+type ProcessStats {
+    allDurations: [Duration!]!
+    avgDuration: Duration!
+    avgStart: Duration!
+}
+
+type Queries {
+    getCluster(reportId: String!, structureHash: String!): TraceCluster!
+    getReport(value: String!): AnalysisReport
+    listReports: [AnalysisReport!]
+    suggest(serviceName: String): SuggestResponse!
+}
+
+type SuggestResponse {
+    operations: [OperationSuggest!]!
+    services: [String!]!
+}
+
+type TraceCluster {
+    id: ClusterId!
+    processes: [KVStringProcess!]!
+}
+
+scalar Duration
+
+"An instantaneous point on the time-line represented by a standard date time string"
+scalar Instant
+
+input TraceQueryInput {
+    durationMaxMillis: Int
+    durationMinMillis: Int
+    operationName: String!
+    serviceName: String!
+    startTimeMaxSeconds: Int
+    startTimeMinSeconds: Int
+    tags: [String!]!
+}

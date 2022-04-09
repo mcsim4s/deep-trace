@@ -1,9 +1,11 @@
 import {Box, Button, Columns, Form as BulmaForm, Heading, Panel} from "react-bulma-components";
 import React from "react";
 import {Form, Field, Formik} from "formik";
-import {gql, useMutation} from "@apollo/client";
-import {MutationsCreateReportArgs, Mutations, Scalars, Maybe} from "../generated/graphql";
+import {gql, useMutation, useQuery} from "@apollo/client";
+import {MutationsCreateReportArgs, Mutations, Scalars, Maybe, Queries, QueriesSuggestArgs} from "../generated/graphql";
 import {ReportFragment} from "../gql/fragments";
+import {ReactComponent} from "*.svg";
+import {FieldProps} from "formik/dist/Field";
 
 type CreateReportParam = {
   serviceName: string;
@@ -14,11 +16,10 @@ type CreateReportParam = {
   lookup: "1h" | "2h";
 }
 const initialValues: CreateReportParam = {
-  serviceName: "jaeger-query",
-  operationName: "/api/traces",
+  serviceName: "",
+  operationName: "",
   lookup: "1h"
 };
-
 
 const createReportMutation = gql`
   ${ReportFragment}
@@ -29,15 +30,38 @@ const createReportMutation = gql`
   }
 `;
 
+const getSuggestQuery = gql`
+    query Suggest($serviceName: String!) {
+      suggest(serviceName: $serviceName) {
+        services,
+        operations {
+          name,
+          kind
+        }
+      }
+    }
+`;
+
+type AddReportFormProps = {
+  onSubmit: () => any,
+  // selectedService: string | null,
+  // selectedOperation: string | null
+}
 type AddReportFormState = {
-  onSubmit: () => any
+  selectedService: string | null,
+  selectedOperation: string | null
 }
 
-export default function ReportCreateBulmaForm(props: AddReportFormState) {
+export default function ReportCreateForm(props: AddReportFormProps) {
   const [send] = useMutation<Mutations, MutationsCreateReportArgs>(
     createReportMutation
   )
+  let {data, refetch} = useQuery<Queries, QueriesSuggestArgs>(getSuggestQuery, {
+    variables: {}
+  })
 
+  const services: string[] = data?.suggest.services || [];
+  const operations: string[] = data?.suggest.operations.map(o => o.name) || [];
 
   return <Box className="is-primary">
     <Heading size={4} spaced={true}>Create new report</Heading>
@@ -58,61 +82,82 @@ export default function ReportCreateBulmaForm(props: AddReportFormState) {
           }
         }
       ).then(() => props.onSubmit())
-    }}>
-    <Form>
-      <BulmaForm.Field>
-        <BulmaForm.Label>Service name</BulmaForm.Label>
-        <BulmaForm.Control>
-          <Field className={"input"} name={"serviceName"}/>
-        </BulmaForm.Control>
-      </BulmaForm.Field>
-      <BulmaForm.Field>
-        <BulmaForm.Label>Operation</BulmaForm.Label>
-        <BulmaForm.Control>
-          <Field className={"input"} name={"operationName"}/>
-        </BulmaForm.Control>
-      </BulmaForm.Field>
-      <BulmaForm.Field>
-        <BulmaForm.Label>Tags</BulmaForm.Label>
-        <BulmaForm.Control>
-          <Field className={"input"} name={"tags"}/>
-        </BulmaForm.Control>
-      </BulmaForm.Field>
-      <BulmaForm.Field>
-        <BulmaForm.Label>Lookback</BulmaForm.Label>
-        <BulmaForm.Control>
-          <div className={"select"}>
-            <Field as="select" name="lookup">
-              <option value="1h">Last Hour</option>
-              <option value="2h">Last 2 Hours</option>
-            </Field>
-          </div>
-        </BulmaForm.Control>
-      </BulmaForm.Field>
-      <Columns>
-        <Columns.Column size="half">
-          <BulmaForm.Field>
-            <BulmaForm.Label>Max Duration</BulmaForm.Label>
-            <BulmaForm.Control>
-              <Field className={"input"} name={"maxDuration"}/>
-            </BulmaForm.Control>
-          </BulmaForm.Field>
-        </Columns.Column>
-        <Columns.Column size="half">
-          <BulmaForm.Field>
-            <BulmaForm.Label>Min Duration</BulmaForm.Label>
-            <BulmaForm.Control>
-              <Field className={"input"} name={"minDuration"}/>
-            </BulmaForm.Control>
-          </BulmaForm.Field>
-        </Columns.Column>
-      </Columns>
-      <BulmaForm.Field>
-        <BulmaForm.Control>
-          <Button className="is-success" submit={true}>Create report</Button>
-        </BulmaForm.Control>
-      </BulmaForm.Field>
-    </Form>
+    }} >
+      <Form>
+        <BulmaForm.Field>
+          <BulmaForm.Label>Service name</BulmaForm.Label>
+          <BulmaForm.Control>
+            <div className={"select"}>
+              <Field name="serviceName">
+                {(props: FieldProps) => {
+                  return <BulmaForm.Select {...props.field} onChange={(event) => {
+                    props.field.onChange(event)
+                    refetch({
+                      serviceName: event.currentTarget.value
+                    })
+                  }}>
+                    {services.map(service => {
+                      return <option key={`${service}-option`} value={service}>{service}</option>
+                    })}
+                  </BulmaForm.Select>
+                }}
+              </Field>
+            </div>
+          </BulmaForm.Control>
+        </BulmaForm.Field>
+        <BulmaForm.Field>
+          <BulmaForm.Label>Operation</BulmaForm.Label>
+          <BulmaForm.Control>
+            <div className={"select"}>
+              <Field as="select" name="operationName">
+                {operations.map(operation => {
+                  return <option key={`${operation}-option`} value={operation}>{operation}</option>
+                })}
+              </Field>
+            </div>
+          </BulmaForm.Control>
+        </BulmaForm.Field>
+        <BulmaForm.Field>
+          <BulmaForm.Label>Tags</BulmaForm.Label>
+          <BulmaForm.Control>
+            <Field className={"input"} name={"tags"}/>
+          </BulmaForm.Control>
+        </BulmaForm.Field>
+        <BulmaForm.Field>
+          <BulmaForm.Label>Lookback</BulmaForm.Label>
+          <BulmaForm.Control>
+            <div className={"select"}>
+              <Field as="select" name="lookup">
+                <option value="1h">Last Hour</option>
+                <option value="2h">Last 2 Hours</option>
+              </Field>
+            </div>
+          </BulmaForm.Control>
+        </BulmaForm.Field>
+        <Columns>
+          <Columns.Column size="half">
+            <BulmaForm.Field>
+              <BulmaForm.Label>Max Duration</BulmaForm.Label>
+              <BulmaForm.Control>
+                <Field className={"input"} name={"maxDuration"}/>
+              </BulmaForm.Control>
+            </BulmaForm.Field>
+          </Columns.Column>
+          <Columns.Column size="half">
+            <BulmaForm.Field>
+              <BulmaForm.Label>Min Duration</BulmaForm.Label>
+              <BulmaForm.Control>
+                <Field className={"input"} name={"minDuration"}/>
+              </BulmaForm.Control>
+            </BulmaForm.Field>
+          </Columns.Column>
+        </Columns>
+        <BulmaForm.Field>
+          <BulmaForm.Control>
+            <Button className="is-success" submit={true}>Create report</Button>
+          </BulmaForm.Control>
+        </BulmaForm.Field>
+      </Form>
     </Formik>
   </Box>;
 }
