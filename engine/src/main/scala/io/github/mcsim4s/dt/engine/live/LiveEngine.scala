@@ -30,7 +30,7 @@ class LiveEngine(
   override def process(request: AnalysisRequest): IO[DeepTraceError, AnalysisReport] = {
     for {
       report <- reportStore.create(request)
-      _ <- parseTraces(report, request.traceSource)
+      _ <- parseTraces(report, request)
         .flatMap { clusters =>
           ZIO.foreach_(clusters)(processCluster) *>
             reportStore.update(report.id) { _ =>
@@ -45,16 +45,11 @@ class LiveEngine(
     } yield report
   }
 
-  private def parseTraces(report: AnalysisReport, traceSource: RawTraceSource): IO[DeepTraceError, Seq[TraceCluster]] =
-    traceSource
+  private def parseTraces(report: AnalysisReport, request: AnalysisRequest): IO[DeepTraceError, Seq[TraceCluster]] =
+    request.traceSource
       .tap(trace => console.putStrLn(s"Parsing another trace with ${trace.spans.size} spans").ignore)
-      .foreach(trace =>
-        traceParser
-          .parse(trace)
-          .flatMap { root =>
-            clusterStore.getOrCreate(report.id, root)
-          }
-      ) *>
+      .flatMap(trace => traceParser.parse(trace, request.operation))
+      .foreach(root => clusterStore.getOrCreate(report.id, root)) *>
       clusterStore
         .list(report.id)
         .runCollect

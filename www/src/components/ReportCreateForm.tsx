@@ -16,8 +16,8 @@ type CreateReportParam = {
   lookup: "1h" | "2h";
 }
 const initialValues: CreateReportParam = {
-  serviceName: "",
-  operationName: "",
+  serviceName: "loading...",
+  operationName: "loading...",
   lookup: "1h"
 };
 
@@ -43,13 +43,7 @@ const getSuggestQuery = gql`
 `;
 
 type AddReportFormProps = {
-  onSubmit: () => any,
-  // selectedService: string | null,
-  // selectedOperation: string | null
-}
-type AddReportFormState = {
-  selectedService: string | null,
-  selectedOperation: string | null
+  onSubmit: () => any
 }
 
 export default function ReportCreateForm(props: AddReportFormProps) {
@@ -62,6 +56,10 @@ export default function ReportCreateForm(props: AddReportFormProps) {
 
   const services: string[] = data?.suggest.services || [];
   const operations: string[] = data?.suggest.operations.map(o => o.name) || [];
+
+  if (initialValues.serviceName === "loading..." && services.length > 0) {
+    initialValues.serviceName = services[0]
+  }
 
   return <Box className="is-primary">
     <Heading size={4} spaced={true}>Create new report</Heading>
