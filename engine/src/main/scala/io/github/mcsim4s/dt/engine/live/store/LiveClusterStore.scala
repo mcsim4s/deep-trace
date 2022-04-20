@@ -3,6 +3,7 @@ package io.github.mcsim4s.dt.engine.live.store
 import io.github.mcsim4s.dt.engine.store.ClusterStore
 import io.github.mcsim4s.dt.engine.store.ClusterStore.ClusterStore
 import io.github.mcsim4s.dt.model.DeepTraceError.{CasConflict, ClusterNotFound, ReportNotFound}
+import io.github.mcsim4s.dt.model.Process.ParallelProcess
 import io.github.mcsim4s.dt.model.{AnalysisReport, DeepTraceError, Process, TraceCluster}
 import io.github.mcsim4s.dt.model.TraceCluster.{ClusterId, ClusterSource}
 import zio._
@@ -26,7 +27,7 @@ class LiveClusterStore(clustersRef: TMap[String, Map[String, TraceCluster]], clo
       .flatMap(opt => ZSTM.fromOption(opt))
       .orElseFail(ClusterNotFound(id))
 
-  override def getOrCreate(reportId: String, root: Process): UIO[TraceCluster] = {
+  override def getOrCreate(reportId: String, root: ParallelProcess): UIO[TraceCluster] = {
     val clusterId = ClusterId(reportId, root.id.hash)
     STM.atomically(
       for {

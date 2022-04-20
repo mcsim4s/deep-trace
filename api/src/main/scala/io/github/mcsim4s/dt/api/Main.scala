@@ -5,7 +5,7 @@ import io.github.mcsim4s.dt.api.ApiService.ApiService
 import io.github.mcsim4s.dt.api.services.jaeger.JaegerService
 import io.github.mcsim4s.dt.api.services.jaeger.JaegerService.JaegerService
 import io.github.mcsim4s.dt.engine.Engine.Engine
-import io.github.mcsim4s.dt.engine.live.store.{LiveClusterStore, LiveProcessStore, LiveReportStore, LiveSpanStore}
+import io.github.mcsim4s.dt.engine.live.store.{LiveClusterStore, LiveReportStore, LiveProcessStore}
 import io.github.mcsim4s.dt.engine.live.{LiveEngine, TraceParserLive}
 import io.github.mcsim4s.dt.engine.source.JaegerSource
 import io.github.mcsim4s.dt.engine.store.ClusterStore.ClusterStore
@@ -72,7 +72,6 @@ object Main extends zio.App {
       LiveReportStore.layer,
       LiveClusterStore.layer,
       LiveProcessStore.layer,
-      LiveSpanStore.layer,
       TraceParserLive.layer,
       LiveEngine.layer,
       ApiService.live,

@@ -1,29 +1,37 @@
 package io.github.mcsim4s.dt.engine.live.store
 
+import io.github.mcsim4s.dt.engine.live.store.LiveProcessStore.InstanceId
 import io.github.mcsim4s.dt.engine.store.ProcessStore
 import io.github.mcsim4s.dt.engine.store.ProcessStore.ProcessStore
-import io.github.mcsim4s.dt.model.Process
+import io.github.mcsim4s.dt.model.Process.ProcessId
 import io.github.mcsim4s.dt.model.TraceCluster.ClusterId
-import zio._
+import io.github.mcsim4s.dt.model.{ProcessInstance, TraceCluster}
+import io.jaegertracing.api_v2.model.Span
 import zio.random.Random
-import zio.stm._
+import zio.stm.{STM, TMap}
+import zio.{UIO, ZIO, ZLayer}
 
-class LiveProcessStore(processesRef: TMap[ClusterId, Seq[Process]]) extends ProcessStore.Service {
+class LiveProcessStore(spansRef: TMap[InstanceId, List[ProcessInstance]]) extends ProcessStore.Service {
 
-  override def add(clusterId: ClusterId, process: Process): UIO[Unit] =
+  override def add(clusterId: TraceCluster.ClusterId, instance: ProcessInstance): UIO[Unit] =
     STM.atomically {
-      for {
-        existing <- processesRef.getOrElse(clusterId, Seq.empty)
-        _ <- processesRef.put(clusterId, existing :+ process)
-      } yield ()
+      val id = clusterId -> instance.processId
+      spansRef.getOrElse(id, List.empty).flatMap { old =>
+        spansRef.put(id, old.appended(instance))
+      }
     }
+
+  override def list(clusterId: TraceCluster.ClusterId, processId: ProcessId): UIO[List[ProcessInstance]] =
+    STM.atomically(spansRef.getOrElse(clusterId -> processId, List.empty))
 }
 
 object LiveProcessStore {
+  type InstanceId = (ClusterId, ProcessId)
+
   def makeService: ZIO[Any, Nothing, LiveProcessStore] =
     for {
-      processesRef <- STM.atomically(TMap.make[ClusterId, Seq[Process]]())
-    } yield new LiveProcessStore(processesRef)
+      spansRef <- STM.atomically(TMap.make[InstanceId, List[ProcessInstance]]())
+    } yield new LiveProcessStore(spansRef)
 
   val layer: ZLayer[Random, Nothing, ProcessStore] = makeService.toLayer
 }

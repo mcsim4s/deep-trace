@@ -3,7 +3,7 @@ package io.github.mcsim4s.dt.engine
 import com.google.protobuf.ByteString
 import io.github.mcsim4s.dt.engine.TraceParser.TraceParser
 import io.github.mcsim4s.dt.engine.live.TraceParserLive
-import io.github.mcsim4s.dt.engine.live.store.LiveSpanStore
+import io.github.mcsim4s.dt.engine.live.store.LiveProcessStore
 import io.github.mcsim4s.dt.model.RawTrace
 import io.jaegertracing.api_v2.model.{Span, SpanRef, SpanRefType}
 import zio.ZLayer
@@ -57,7 +57,7 @@ object ClusterStatsParserSpec extends DefaultRunnableSpec {
             .parse(singleSpanTrace, "single operation")
             .runHead
 //            .tap(trace => zio.console.putStrLn(trace.toString))
-        )(isSome(hasField("operation", _.operation, equalTo("single operation"))))
+        )(isSome(hasField("operation", _.process.operation, equalTo("single operation"))))
       },
       testM("Convert one child raw trace to trace") {
         assertM(
@@ -65,11 +65,11 @@ object ClusterStatsParserSpec extends DefaultRunnableSpec {
             .parse(singleChildTrace, "single child operation")
             .runHead
 //              .tap(trace => zio.console.putStrLn(trace.toString))
-        )(isSome(hasField("children", _.children, hasSize(equalTo(1)))))
+        )(isSome(hasField("children", _.process.children, hasSize(equalTo(1)))))
       }
     ).provideCustomLayerShared(
       ZLayer.wireSome[TestEnvironment, TestEnvironment with TraceParser](
-        LiveSpanStore.layer,
+        LiveProcessStore.layer,
         TraceParserLive.layer
       )
     )

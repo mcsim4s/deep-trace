@@ -26,6 +26,24 @@ package object model {
 
   implicit class RichTimestamp(val timeStamp: Timestamp) {
     def toInstant: Instant = Instant.ofEpochSecond(timeStamp.seconds, timeStamp.nanos)
+
+    def plus(duration: com.google.protobuf.duration.Duration): Timestamp = {
+      Timestamp.of(timeStamp.seconds + duration.seconds, timeStamp.nanos + duration.nanos)
+    }
+
+    def minus(other: Timestamp): com.google.protobuf.duration.Duration = {
+      val seconds = other.seconds - timeStamp.seconds
+      val nanos = other.nanos - timeStamp.nanos
+
+      if (seconds * nanos >= 0) {
+        com.google.protobuf.duration.Duration.of(seconds, nanos)
+      } else if (seconds > 0) {
+        val ext = math.ceil(nanos / -1000d).toInt
+        if (seconds - ext > 0) {
+          com.google.protobuf.duration.Duration.of(seconds - ext, nanos + ext * 1000)
+        } else throw new IllegalArgumentException("Too complicated")
+      } else throw new IllegalArgumentException("Too complicated")
+    }
   }
 
   implicit class RichInstant(val instant: Instant) {

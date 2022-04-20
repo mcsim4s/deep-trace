@@ -5,10 +5,9 @@ import io.github.mcsim4s.dt.engine.TraceParser.TraceParser
 import io.github.mcsim4s.dt.engine.store.ClusterStore.ClusterStore
 import io.github.mcsim4s.dt.engine.store.ProcessStore.ProcessStore
 import io.github.mcsim4s.dt.engine.store.ReportStore.ReportStore
-import io.github.mcsim4s.dt.engine.store.SpanStore.SpanStore
-import io.github.mcsim4s.dt.engine.store.{ClusterStore, ProcessStore, ReportStore, SpanStore}
+import io.github.mcsim4s.dt.engine.store.{ClusterStore, ProcessStore, ReportStore}
 import io.github.mcsim4s.dt.engine.{Engine, TraceParser}
-import io.github.mcsim4s.dt.model.AnalysisRequest.RawTraceSource
+import io.github.mcsim4s.dt.model.TraceCluster.ClusterId
 import io.github.mcsim4s.dt.model._
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics
 import zio._
@@ -20,9 +19,8 @@ import scala.concurrent.duration.Duration
 class LiveEngine(
     reportStore: ReportStore.Service,
     clusterStore: ClusterStore.Service,
-    processStore: ProcessStore.Service,
     traceParser: TraceParser.Service,
-    spanStore: SpanStore.Service,
+    processStore: ProcessStore.Service,
     console: Console.Service,
     random: Random.Service
 ) extends Engine.Service {
@@ -49,7 +47,11 @@ class LiveEngine(
     request.traceSource
       .tap(trace => console.putStrLn(s"Parsing another trace with ${trace.spans.size} spans").ignore)
       .flatMap(trace => traceParser.parse(trace, request.operation))
-      .foreach(root => clusterStore.getOrCreate(report.id, root)) *>
+      .foreach(root =>
+        clusterStore
+          .getOrCreate(report.id, root.process)
+          .flatMap(cluster => ZIO.foreach(root.instances)(i => processStore.add(cluster.id, i)))
+      ) *>
       clusterStore
         .list(report.id)
         .runCollect
@@ -58,29 +60,35 @@ class LiveEngine(
   private def processCluster(cluster: TraceCluster): IO[DeepTraceError, TraceCluster] =
     clusterStore
       .update(cluster.id) { old =>
-        avgTrace(old.root)
+        computeStats(old.id)(old.root)
           .map { trace =>
             old.copy(stats = Some(trace))
           }
       }
 
-  def avgTrace(process: Process): IO[DeepTraceError, ClusterStats] =
+  def computeStats(clusterId: ClusterId)(process: Process): IO[DeepTraceError, ClusterStats] =
     for {
-      spans <- spanStore.list(process.id)
+      spans <- processStore.list(clusterId, process.id)
       (avgStart, avgDuration) = {
         val start = new DescriptiveStatistics()
         val duration = new DescriptiveStatistics()
         spans.foreach { span =>
-          start.addValue(span.getStartTime.toInstant.toDuration.toNanos)
-          duration.addValue(span.getDuration.asScala.toNanos)
+          start.addValue(span.start.toNanos)
+          duration.addValue(span.duration.toNanos)
         }
         Duration.fromNanos(start.getMean) -> Duration.fromNanos(duration.getMean)
       }
-      stats = ProcessStats(avgStart, avgDuration, spans.map(_.getDuration.asScala))
+      stats = ProcessStats.FlatStats(avgStart, avgDuration, spans.map(_.duration))
+      subProcesses = process match {
+        case Process.SequentialProcess(children)     => children
+        case Process.ParallelProcess(_, _, children) => children
+        case Process.ConcurrentProcess(of)           => Seq(of)
+        case Process.Gap(_, _)                       => Seq.empty
+      }
       children <-
-        if (process.children.nonEmpty) {
+        if (subProcesses.nonEmpty) {
           ZIO
-            .foreach(process.children)(avgTrace)
+            .foreach(subProcesses)(computeStats(clusterId))
             .map(_.reduce(_ ++ _))
         } else IO.succeed(ClusterStats.empty)
 
@@ -89,22 +97,21 @@ class LiveEngine(
 
 object LiveEngine {
   def makeService: ZIO[
-    ReportStore with ClusterStore with ProcessStore with TraceParser with SpanStore with Console with Random,
+    ReportStore with ClusterStore with TraceParser with ProcessStore with Console with Random,
     Nothing,
     LiveEngine
   ] =
     for {
       reportStore <- ZIO.service[ReportStore.Service]
       clusterStore <- ZIO.service[ClusterStore.Service]
-      processStore <- ZIO.service[ProcessStore.Service]
       traceParser <- ZIO.service[TraceParser.Service]
-      spanStore <- ZIO.service[SpanStore.Service]
+      spanStore <- ZIO.service[ProcessStore.Service]
       console <- ZIO.service[Console.Service]
       random <- ZIO.service[Random.Service]
-    } yield new LiveEngine(reportStore, clusterStore, processStore, traceParser, spanStore, console, random)
+    } yield new LiveEngine(reportStore, clusterStore, traceParser, spanStore, console, random)
 
   val layer: ZLayer[
-    ReportStore with ClusterStore with ProcessStore with TraceParser with SpanStore with Console with Random,
+    ReportStore with ClusterStore with TraceParser with ProcessStore with Console with Random,
     Nothing,
     Engine
   ] = makeService.toLayer

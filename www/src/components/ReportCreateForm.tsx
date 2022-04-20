@@ -16,8 +16,8 @@ type CreateReportParam = {
   lookup: "1h" | "2h";
 }
 const initialValues: CreateReportParam = {
-  serviceName: "loading...",
-  operationName: "loading...",
+  serviceName: "",
+  operationName: "",
   lookup: "1h"
 };
 
@@ -54,12 +54,8 @@ export default function ReportCreateForm(props: AddReportFormProps) {
     variables: {}
   })
 
-  const services: string[] = data?.suggest.services || [];
-  const operations: string[] = data?.suggest.operations.map(o => o.name) || [];
-
-  if (initialValues.serviceName === "loading..." && services.length > 0) {
-    initialValues.serviceName = services[0]
-  }
+  const services: string[] = data?.suggest.services || ["loading..."];
+  const operations: string[] = data?.suggest.operations.map(o => o.name) || ["loading..."];
 
   return <Box className="is-primary">
     <Heading size={4} spaced={true}>Create new report</Heading>

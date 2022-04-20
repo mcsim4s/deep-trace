@@ -31,17 +31,75 @@ package object mappers {
       case AnalysisReport.ClustersBuilt(clusterIds) => ApiReport.ClustersBuilt(clusterIds.map(toApi))
     }
 
-  def toApi(process: Process, stats: ClusterStats, parent: Option[String] = None): Map[String, ApiProcess] = {
-    val current = ApiProcess(
+  def toApi(
+      process: Process.ParallelProcess,
+      stats: ClusterStats,
+      isRoot: Boolean = false
+  ): Map[String, ApiProcess] = {
+    val current = ApiProcess.ParallelProcess(
       id = process.id.hash,
+      isRoot = isRoot,
       service = process.service,
       operation = process.operation,
-      parentId = parent,
-      stats = stats.processes(process.id.hash)
+      childrenIds = process.children.map(_.id.hash),
+      stats = stats.processes(process.id.hash).asFlat
     )
-    process.children.foldLeft(Map(current.id -> current)) {
+    process.children.foldLeft(Map[String, ApiProcess](current.id -> current)) {
       case (acc, child) =>
-        acc ++ toApi(child, stats, parent = Some(current.id))
+        acc ++ toApi(child, stats)
+    }
+  }
+
+  def toApi(
+      process: Process.SequentialProcess,
+      stats: ClusterStats
+  ): Map[String, ApiProcess] = {
+    val current = ApiProcess.SequentialProcess(
+      id = process.id.hash,
+      childrenIds = process.children.map(_.id.hash)
+    )
+    process.children.foldLeft(Map[String, ApiProcess](current.id -> current)) {
+      case (acc, child) =>
+        acc ++ toApiProcessGeneral(child, stats)
+    }
+  }
+
+  def toApi(
+      process: Process.ConcurrentProcess,
+      stats: ClusterStats
+  ): Map[String, ApiProcess] = {
+    val current = ApiProcess.ConcurrentProcess(
+      id = process.id.hash,
+      ofId = process.of.id.hash,
+      stats = stats.processes(process.id.hash).asConcurrent
+    )
+    Map[String, ApiProcess](
+      current.id -> current
+    ) ++ toApi(process.of, stats)
+  }
+
+  def toApi(
+      process: Process.Gap,
+      stats: ClusterStats
+  ): Map[String, ApiProcess] = {
+    val current = ApiProcess.Gap(
+      id = process.id.hash,
+      stats = stats.processes(process.id.hash).asFlat
+    )
+    Map[String, ApiProcess](
+      current.id -> current
+    )
+  }
+
+  def toApiProcessGeneral(
+      process: Process,
+      stats: ClusterStats
+  ): Map[String, ApiProcess] = {
+    process match {
+      case par: Process.ParallelProcess          => toApi(par, stats)
+      case seq: Process.SequentialProcess        => toApi(seq, stats)
+      case concurrent: Process.ConcurrentProcess => toApi(concurrent, stats)
+      case gap: Process.Gap                      => toApi(gap, stats)
     }
   }
 
