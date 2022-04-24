@@ -32,7 +32,8 @@ object Process {
   case class SequentialProcess(children: Seq[Process]) extends Process {
     lazy val id: ProcessId = {
       val builder = new StringBuilder()
-      children.filterNot(_.isGap).foreach(child => builder.append(child.id))
+      builder.append("sequential")
+      children.foreach(child => builder.append(child.id))
       ProcessId(MD5.hash(builder.toString()))
     }
   }
@@ -46,14 +47,5 @@ object Process {
     }
   }
 
-  case class Gap(parent: SequentialProcess, previous: Option[Process]) extends Process {
-    lazy val id: ProcessId = {
-      val builder = new StringBuilder()
-      builder.append("gap")
-      builder.append(parent.id.hash)
-      val path = parent.children.takeWhile(p => previous.forall(_.id == p.id))
-      path.foreach(p => builder.append(p.id.hash))
-      ProcessId(MD5.hash(builder.toString()))
-    }
-  }
+  case class Gap(id: ProcessId) extends Process
 }

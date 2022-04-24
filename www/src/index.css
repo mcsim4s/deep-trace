@@ -12,12 +12,37 @@ code {
     monospace;
 }
 
+.section {
+  padding: 1em !important;
+}
+
 .process-bar {
+  font-size: 10px;
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.stats-toggler {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.stats-toggler:hover {
+  background: #d6d6d6;
+}
+
+.parallel {
   height: 12px;
   background: #00d1b2;
   border-radius: 4px;
-  margin: 0;
-  font-size: 10px;
+}
+
+.gap {
+  height: 2px;
+  background: #ffd6df;
+  border-radius: 1px;
 }
 
 .process-legend {
@@ -27,8 +52,7 @@ code {
 
 .process-bar-container {
   background: #fff;
-  cursor: pointer;
-  padding: .6rem 2px !important;
+  padding: 0rem 2px !important;
 }
 
 .process-bar-container .level {
@@ -37,10 +61,6 @@ code {
 
 .process-heading {
   background: #ddd;
-}
-
-.process-bar-container:hover {
-  background: #d6d6d6;
 }
 
 .process-container {

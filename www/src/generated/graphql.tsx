@@ -41,6 +41,32 @@ export type ClustersBuilt = {
   clusterIds: Array<ClusterId>;
 };
 
+export type ConcurrentProcess = {
+  __typename?: 'ConcurrentProcess';
+  id: Scalars['String'];
+  ofId: Scalars['String'];
+  stats: ConcurrentStats;
+};
+
+export type ConcurrentStats = {
+  __typename?: 'ConcurrentStats';
+  flat: FlatStats;
+  avgSubprocesses: Scalars['Int'];
+};
+
+
+export type FlatStats = {
+  __typename?: 'FlatStats';
+  avgStart: Scalars['Duration'];
+  avgDuration: Scalars['Duration'];
+  allDurations: Array<Scalars['Duration']>;
+};
+
+export type Gap = {
+  __typename?: 'Gap';
+  id: Scalars['String'];
+  stats: FlatStats;
+};
 
 
 /** A key-value pair of String and Process */
@@ -69,21 +95,17 @@ export type OperationSuggest = {
   kind: Scalars['String'];
 };
 
-export type Process = {
-  __typename?: 'Process';
+export type ParallelProcess = {
+  __typename?: 'ParallelProcess';
   id: Scalars['String'];
+  isRoot: Scalars['Boolean'];
   service: Scalars['String'];
   operation: Scalars['String'];
-  parentId?: Maybe<Scalars['String']>;
-  stats: ProcessStats;
+  childrenIds: Array<Scalars['String']>;
+  stats: FlatStats;
 };
 
-export type ProcessStats = {
-  __typename?: 'ProcessStats';
-  avgStart: Scalars['Duration'];
-  avgDuration: Scalars['Duration'];
-  allDurations: Array<Scalars['Duration']>;
-};
+export type Process = ConcurrentProcess | Gap | ParallelProcess | SequentialProcess;
 
 export type Queries = {
   __typename?: 'Queries';
@@ -107,6 +129,12 @@ export type QueriesGetReportArgs = {
 
 export type QueriesSuggestArgs = {
   serviceName?: Maybe<Scalars['String']>;
+};
+
+export type SequentialProcess = {
+  __typename?: 'SequentialProcess';
+  id: Scalars['String'];
+  childrenIds: Array<Scalars['String']>;
 };
 
 export type State = Clustering | ClustersBuilt;

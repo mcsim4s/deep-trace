@@ -33,7 +33,7 @@ export default function Cluster() {
     <div>
       <Heading size={3}>{trace.root.service} : {trace.root.operation}</Heading>
       <Heading subtitle={true} size={6}>{data.getCluster.id.structureHash}</Heading>
-      <ProcessView trace={trace} current={trace.root}/>
+      <ProcessView trace={trace}/>
     </div>
   </>;
 };

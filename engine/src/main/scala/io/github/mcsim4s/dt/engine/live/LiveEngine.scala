@@ -47,11 +47,13 @@ class LiveEngine(
     request.traceSource
       .tap(trace => console.putStrLn(s"Parsing another trace with ${trace.spans.size} spans").ignore)
       .flatMap(trace => traceParser.parse(trace, request.operation))
-      .foreach(root =>
-        clusterStore
-          .getOrCreate(report.id, root.process)
-          .flatMap(cluster => ZIO.foreach(root.instances)(i => processStore.add(cluster.id, i)))
-      ) *>
+      .foreach(root => {
+        val debug = root.instances.groupBy(_.processId)
+        console.putStrLn(debug.toString()).ignore *>
+          clusterStore
+            .getOrCreate(report.id, root.process)
+            .flatMap(cluster => ZIO.foreach(root.instances)(i => processStore.add(cluster.id, i)))
+      }) *>
       clusterStore
         .list(report.id)
         .runCollect
@@ -83,7 +85,7 @@ class LiveEngine(
         case Process.SequentialProcess(children)     => children
         case Process.ParallelProcess(_, _, children) => children
         case Process.ConcurrentProcess(of)           => Seq(of)
-        case Process.Gap(_, _)                       => Seq.empty
+        case Process.Gap(_)                          => Seq.empty
       }
       children <-
         if (subProcesses.nonEmpty) {

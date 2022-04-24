@@ -5,6 +5,8 @@ schema {
     mutation: Mutations
 }
 
+union Process = ConcurrentProcess | Gap | ParallelProcess | SequentialProcess
+
 union State = Clustering | ClustersBuilt
 
 type AnalysisReport {
@@ -29,6 +31,28 @@ type ClustersBuilt {
     clusterIds: [ClusterId!]!
 }
 
+type ConcurrentProcess {
+    id: String!
+    ofId: String!
+    stats: ConcurrentStats!
+}
+
+type ConcurrentStats {
+    avgSubprocesses: Int!
+    flat: FlatStats!
+}
+
+type FlatStats {
+    allDurations: [Duration!]!
+    avgDuration: Duration!
+    avgStart: Duration!
+}
+
+type Gap {
+    id: String!
+    stats: FlatStats!
+}
+
 "A key-value pair of String and Process"
 type KVStringProcess {
     "Key"
@@ -46,18 +70,13 @@ type OperationSuggest {
     name: String!
 }
 
-type Process {
+type ParallelProcess {
+    childrenIds: [String!]!
     id: String!
+    isRoot: Boolean!
     operation: String!
-    parentId: String
     service: String!
-    stats: ProcessStats!
-}
-
-type ProcessStats {
-    allDurations: [Duration!]!
-    avgDuration: Duration!
-    avgStart: Duration!
+    stats: FlatStats!
 }
 
 type Queries {
@@ -65,6 +84,11 @@ type Queries {
     getReport(value: String!): AnalysisReport
     listReports: [AnalysisReport!]
     suggest(serviceName: String): SuggestResponse!
+}
+
+type SequentialProcess {
+    childrenIds: [String!]!
+    id: String!
 }
 
 type SuggestResponse {

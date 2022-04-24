@@ -3,7 +3,7 @@ package io.github.mcsim4s.dt.engine.live
 import com.google.protobuf.ByteString
 import io.github.mcsim4s.dt.engine.TraceParser
 import io.github.mcsim4s.dt.engine.TraceParser.{ParsingResult, TraceParser}
-import io.github.mcsim4s.dt.engine.live.TraceParserLive.{ParentToChild, ParsedProcess, RawSpanId}
+import io.github.mcsim4s.dt.engine.live.TraceParserLive._
 import io.github.mcsim4s.dt.engine.store.ProcessStore
 import io.github.mcsim4s.dt.engine.store.ProcessStore.ProcessStore
 import io.github.mcsim4s.dt.model._
@@ -15,6 +15,7 @@ import zio.random.Random
 import zio.stream._
 
 import java.time.Instant
+import scala.concurrent.duration._
 
 class TraceParserLive(spanStore: ProcessStore.Service, random: Random.Service) extends TraceParser.Service {
 
@@ -79,12 +80,13 @@ class TraceParserLive(spanStore: ProcessStore.Service, random: Random.Service) e
         parsedChildren.map(c => ParsedProcess(c.process, c.current))
       )
       reduced = concurrent ++ flat
+      (gapsInstances, children) = reduceSequential(span, span.getDuration.asScala, reduced)
 
       start = span.getStartTime.toInstant.minus(parentStart)
       resultProcess = ParallelProcess(
         service = span.getProcess.serviceName,
         operation = span.operationName,
-        children = Seq(SequentialProcess(children = reduced.map(_.process)))
+        children = children
       )
       resultInstant = ProcessInstance.Single(
         resultProcess.id,
@@ -93,7 +95,7 @@ class TraceParserLive(spanStore: ProcessStore.Service, random: Random.Service) e
       )
     } yield ParsingResult(
       resultProcess,
-      childInstances ++ concurrent.map(_.instance) :+ resultInstant,
+      childInstances ++ concurrent.map(_.instance) ++ gapsInstances :+ resultInstant,
       current = resultInstant
     )
 
@@ -122,13 +124,57 @@ class TraceParserLive(spanStore: ProcessStore.Service, random: Random.Service) e
     concurrent.toSeq -> flat.toSeq
   }
 
+  def reduceSequential(
+      parent: Span,
+      parentDuration: Duration,
+      processes: Seq[ParsedProcess[Process]]
+  ): (Seq[ProcessInstance.Single], Seq[SequentialProcess]) = {
+    val pairs = processes.map { curr =>
+      val startGap = gap(parent, path = Seq.empty, next = Some(curr.process))
+      val startGapInstance = ProcessInstance.Single(startGap.id, start = 0.nanos, duration = curr.instance.start)
+
+      val endGap = gap(parent, path = Seq(startGap, curr.process), next = None)
+      val endGapInstance = ProcessInstance.Single(
+        endGap.id,
+        start = curr.instance.start + curr.instance.duration,
+        duration = parentDuration - (curr.instance.start + curr.instance.duration)
+      )
+
+      Seq(
+        startGapInstance,
+        endGapInstance
+      ) -> Process.SequentialProcess(
+        Seq(startGap, curr.process, endGap)
+      )
+    }
+    if (pairs.isEmpty) {
+      Seq.empty -> Seq.empty
+    } else {
+      pairs.map(_._1).reduce(_ ++ _) -> pairs.sortBy(_._1.head.duration).map(_._2)
+    }
+
+  }
+
 }
 
 object TraceParserLive {
   type RawSpanId = ByteString
   type ParentToChild = Map[RawSpanId, Seq[Span]]
 
-  case class ParsedProcess[T <: Process](process: T, instance: ProcessInstance)
+  private def gap(parent: Span, path: Seq[Process], next: Option[Process]): Gap = {
+    val builder = new StringBuilder()
+    builder.append("gap")
+    builder.append(parent.processId)
+    builder.append(parent.operationName)
+    next match {
+      case Some(value) => builder.append(value.id)
+      case None        => builder.append("last")
+    }
+    path.foreach(p => builder.append(p.id.hash))
+    Gap(ProcessId(MD5.hash(builder.toString())))
+  }
+
+  case class ParsedProcess[+T <: Process](process: T, instance: ProcessInstance)
 
   val layer: URLayer[ProcessStore with Random, TraceParser] =
     ZLayer.fromServices[ProcessStore.Service, Random.Service, TraceParser.Service](new TraceParserLive(_, _))

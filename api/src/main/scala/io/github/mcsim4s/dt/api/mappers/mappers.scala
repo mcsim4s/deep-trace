@@ -111,7 +111,7 @@ package object mappers {
           .orElseFail(GenericError("Avg Process was empty on cluster request"))
     } yield ApiCluster(
       id = toApi(cluster.id),
-      processes = toApi(cluster.root, avg)
+      processes = toApi(cluster.root, avg, isRoot = true)
     )
   }
 
