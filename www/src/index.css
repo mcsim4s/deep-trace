@@ -1,73 +1,93 @@
 body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
 
 .section {
-  padding: 1em !important;
+    padding: 1em !important;
 }
 
 .process-bar {
-  font-size: 10px;
-  flex-basis: 100%;
-  margin: 0;
+    font-size: 10px;
+    flex-basis: 100%;
+    margin: 0;
 }
 
 .stats-toggler {
-  height: 36px;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
 }
 
 .stats-toggler:hover {
-  background: #d6d6d6;
+    background: hsl(0, 0%, 90%);
 }
 
 .parallel {
-  height: 12px;
-  background: #00d1b2;
-  border-radius: 4px;
+    height: 12px;
+    background: #00d1b2;
+    border-radius: 4px;
 }
 
 .gap {
-  height: 2px;
-  background: #ffd6df;
-  border-radius: 1px;
+    height: 2px;
+    background: #ffd6df;
+    border-radius: 1px;
+}
+
+.concurrent {
+    height: 12px;
+    background: #3273dc;
+    border-radius: 4px;
 }
 
 .process-legend {
-  font-size: 14px;
-  background: #eee;
+    background: hsl(0, 0%, 96%);
+    font-family: "Helvetica Neue", Helvetica, "Segoe UI", Roboto, Arial, sans-serif;
+    padding: 0.6em 2px !important;
+}
+
+.process-legend p {
+    font-size: 13px;
+}
+
+.process-legend small {
+    font-size: 11px;
+}
+
+.trace-title-tab {
+    flex-basis: 20px;
+    display: flex;
+    border-left-style: solid;
+    border-left-width: 2px;
+    border-left-color: #00d1b2;
 }
 
 .process-bar-container {
-  background: #fff;
-  padding: 0rem 2px !important;
+    background: hsl(0, 0%, 98%);
+    padding: 0 2px !important;
 }
 
 .process-bar-container .level {
- height: 100%;
+    height: 100%;
 }
 
 .process-heading {
-  background: #ddd;
+    background: hsl(0, 0%, 86%);
 }
 
 .process-container {
-  border-bottom: #eeeeee;
-  border-bottom-width: 1px;
-  border-bottom-style: solid;
-}
-.process-container:last-of-type {
-  border-bottom: #dddddd;
+    border-bottom: hsl(0, 0%, 98%);
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
 }

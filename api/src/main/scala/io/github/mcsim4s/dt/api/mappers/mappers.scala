@@ -42,7 +42,7 @@ package object mappers {
       service = process.service,
       operation = process.operation,
       childrenIds = process.children.map(_.id.hash),
-      stats = stats.processes(process.id.hash).asFlat
+      stats = stats.processes(process.id).asFlat
     )
     process.children.foldLeft(Map[String, ApiProcess](current.id -> current)) {
       case (acc, child) =>
@@ -71,7 +71,7 @@ package object mappers {
     val current = ApiProcess.ConcurrentProcess(
       id = process.id.hash,
       ofId = process.of.id.hash,
-      stats = stats.processes(process.id.hash).asConcurrent
+      stats = stats.processes(process.id).asConcurrent
     )
     Map[String, ApiProcess](
       current.id -> current
@@ -84,7 +84,7 @@ package object mappers {
   ): Map[String, ApiProcess] = {
     val current = ApiProcess.Gap(
       id = process.id.hash,
-      stats = stats.processes(process.id.hash).asFlat
+      stats = stats.processes(process.id).asFlat
     )
     Map[String, ApiProcess](
       current.id -> current

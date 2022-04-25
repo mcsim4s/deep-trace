@@ -7,6 +7,8 @@ import io.github.mcsim4s.dt.engine.store.ProcessStore.ProcessStore
 import io.github.mcsim4s.dt.engine.store.ReportStore.ReportStore
 import io.github.mcsim4s.dt.engine.store.{ClusterStore, ProcessStore, ReportStore}
 import io.github.mcsim4s.dt.engine.{Engine, TraceParser}
+import io.github.mcsim4s.dt.model.Process.ProcessId
+import io.github.mcsim4s.dt.model.ProcessStats.DurationStats
 import io.github.mcsim4s.dt.model.TraceCluster.ClusterId
 import io.github.mcsim4s.dt.model._
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics
@@ -62,25 +64,27 @@ class LiveEngine(
   private def processCluster(cluster: TraceCluster): IO[DeepTraceError, TraceCluster] =
     clusterStore
       .update(cluster.id) { old =>
-        computeStats(old.id)(old.root)
-          .map { trace =>
-            old.copy(stats = Some(trace))
+        computeStats(old)
+          .map { stats =>
+            old.copy(stats = Some(stats))
           }
       }
 
-  def computeStats(clusterId: ClusterId)(process: Process): IO[DeepTraceError, ClusterStats] =
+  def computeStats(cluster: TraceCluster): IO[DeepTraceError, ClusterStats] =
     for {
-      spans <- processStore.list(clusterId, process.id)
-      (avgStart, avgDuration) = {
-        val start = new DescriptiveStatistics()
-        val duration = new DescriptiveStatistics()
-        spans.foreach { span =>
-          start.addValue(span.start.toNanos)
-          duration.addValue(span.duration.toNanos)
-        }
-        Duration.fromNanos(start.getMean) -> Duration.fromNanos(duration.getMean)
-      }
-      stats = ProcessStats.FlatStats(avgStart, avgDuration, spans.map(_.duration))
+      processesStats <- processesStatsRecursive(cluster.id)(cluster.root)
+      rootSpans <- processStore.list(cluster.id, cluster.root.id)
+    } yield ClusterStats(
+      traceCount = rootSpans.size,
+      containsErrors = false,
+      processes = processesStats
+    )
+
+  def processesStatsRecursive(
+      clusterId: ClusterId
+  )(process: Process): IO[DeepTraceError, Map[ProcessId, ProcessStats]] =
+    for {
+      currentStats <- singleProcessStats(clusterId)(process)
       subProcesses = process match {
         case Process.SequentialProcess(children)     => children
         case Process.ParallelProcess(_, _, children) => children
@@ -90,11 +94,35 @@ class LiveEngine(
       children <-
         if (subProcesses.nonEmpty) {
           ZIO
-            .foreach(subProcesses)(computeStats(clusterId))
+            .foreach(subProcesses)(processesStatsRecursive(clusterId))
             .map(_.reduce(_ ++ _))
-        } else IO.succeed(ClusterStats.empty)
+        } else IO.succeed(Map.empty)
+    } yield Map(process.id -> currentStats) ++ children
 
-    } yield ClusterStats(Map(process.id.hash -> stats)) ++ children
+  def singleProcessStats(clusterId: ClusterId)(process: Process): IO[DeepTraceError, ProcessStats] =
+    for {
+      spans <- processStore.list(clusterId, process.id)
+      duration <- ZIO.effectTotal {
+        val duration = new DescriptiveStatistics()
+        spans.foreach { span =>
+          duration.addValue(span.duration.toNanos)
+        }
+        DurationStats(Duration.fromNanos(duration.getMean))
+      }
+      flat = ProcessStats.FlatStats(duration)
+      result <- process match {
+        case _: Process.ConcurrentProcess =>
+          ZIO.effectTotal {
+            val subProcessCount = new DescriptiveStatistics()
+            spans.foreach { span =>
+              subProcessCount.addValue(span.asConcurrent.count)
+            }
+            ProcessStats.ConcurrentStats(flat = flat, avgSubprocesses = subProcessCount.getMean)
+          }
+        case _ => ZIO.succeed(flat)
+      }
+    } yield result
+
 }
 
 object LiveEngine {

@@ -51,15 +51,18 @@ export type ConcurrentProcess = {
 export type ConcurrentStats = {
   __typename?: 'ConcurrentStats';
   flat: FlatStats;
-  avgSubprocesses: Scalars['Int'];
+  avgSubprocesses: Scalars['Float'];
 };
 
 
+export type DurationStats = {
+  __typename?: 'DurationStats';
+  average: Scalars['Duration'];
+};
+
 export type FlatStats = {
   __typename?: 'FlatStats';
-  avgStart: Scalars['Duration'];
-  avgDuration: Scalars['Duration'];
-  allDurations: Array<Scalars['Duration']>;
+  duration: DurationStats;
 };
 
 export type Gap = {

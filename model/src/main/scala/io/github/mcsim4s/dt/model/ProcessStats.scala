@@ -21,6 +21,7 @@ sealed trait ProcessStats {
 }
 
 object ProcessStats {
-  case class FlatStats(avgStart: Duration, avgDuration: Duration, allDurations: Seq[Duration]) extends ProcessStats
-  case class ConcurrentStats(flat: FlatStats, avgSubprocesses: Int) extends ProcessStats
+  case class DurationStats(average: Duration)
+  case class FlatStats(duration: DurationStats) extends ProcessStats
+  case class ConcurrentStats(flat: FlatStats, avgSubprocesses: Double) extends ProcessStats
 }

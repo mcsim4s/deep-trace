@@ -1,4 +1,4 @@
-import {KvStringProcess, ParallelProcess, Process} from "../generated/graphql";
+import {FlatStats, KvStringProcess, ParallelProcess, Process} from "../generated/graphql";
 
 export class Trace {
     root: ParallelProcess;
@@ -20,11 +20,11 @@ export class Trace {
         } else {
             throw new Error(`Illegal process initialization. No root process in ${JSON.stringify(processes)}`)
         }
-
-        console.log(this.processes.values())
     }
 
-    private isProcess(pr: Process | undefined): pr is Process { return !!pr; }
+    private isProcess(pr: Process | undefined): pr is Process {
+        return !!pr;
+    }
 
     childrenOf(process: Process): Process[] {
         switch (process.__typename) {
@@ -47,6 +47,52 @@ export class Trace {
             return res;
         } else {
             throw new Error(`No process with ${id} in trace`)
+        }
+    }
+
+    flatStatsOf(process: Process): FlatStats {
+        switch (process.__typename) {
+            case "SequentialProcess":
+                throw new Error("Trying to access flat stats of an Sequential process")
+            case "Gap":
+                return process.stats;
+            case "ConcurrentProcess":
+                return process.stats.flat;
+            case "ParallelProcess":
+                return process.stats;
+            default:
+                throw new Error("Unknown process type");
+        }
+    }
+
+    serviceOf(process: Process): string {
+        switch (process.__typename) {
+            case "ParallelProcess":
+                return process.service;
+            case "ConcurrentProcess":
+                return this.asParallel(this.get(process.ofId)).service;
+            default:
+                throw new Error(`Trying to get service name of ${process.__typename}`);
+        }
+    }
+
+    operationOf(process: Process): string {
+        switch (process.__typename) {
+            case "ParallelProcess":
+                return process.operation;
+            case "ConcurrentProcess":
+                return this.asParallel(this.get(process.ofId)).operation;
+            default:
+                throw new Error(`Trying to get service name of ${process.__typename}`);
+        }
+    }
+
+    asParallel(process: Process): ParallelProcess {
+        switch (process.__typename) {
+            case "ParallelProcess":
+                return process;
+            default:
+                throw new Error(`Trying to convert ${process.__typename} to ParallelProcess`);
         }
     }
 }

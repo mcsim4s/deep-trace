@@ -24,8 +24,9 @@ export const ReportFragment = gql`
 
 export const FlatStatsFr = gql`
     fragment FlatStatsFr on FlatStats {
-        avgDuration,
-        allDurations
+        duration {
+            average
+        }
     }
 `
 

@@ -38,14 +38,16 @@ type ConcurrentProcess {
 }
 
 type ConcurrentStats {
-    avgSubprocesses: Int!
+    avgSubprocesses: Float!
     flat: FlatStats!
 }
 
+type DurationStats {
+    average: Duration!
+}
+
 type FlatStats {
-    allDurations: [Duration!]!
-    avgDuration: Duration!
-    avgStart: Duration!
+    duration: DurationStats!
 }
 
 type Gap {
