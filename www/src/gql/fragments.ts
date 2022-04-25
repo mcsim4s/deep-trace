@@ -40,7 +40,7 @@ export const ConcurrentStatsFr = gql`
     }
 `
 
-export const ParallelProcessFr  = gql`
+export const ParallelProcessFr = gql`
     ${FlatStatsFr}
     fragment ParallelProcessFr on ParallelProcess {
         id,
@@ -54,14 +54,14 @@ export const ParallelProcessFr  = gql`
     }
 `
 
-export const SequentialProcessFr  = gql`
+export const SequentialProcessFr = gql`
     fragment SequentialProcessFr on SequentialProcess {
         id,
         childrenIds
     }
 `
 
-export const ConcurrentProcessFr  = gql`
+export const ConcurrentProcessFr = gql`
     ${ConcurrentStatsFr}
     fragment ConcurrentProcessFr on ConcurrentProcess {
         id,
@@ -72,7 +72,7 @@ export const ConcurrentProcessFr  = gql`
     }
 `
 
-export const GapFr  = gql`
+export const GapFr = gql`
     ${FlatStatsFr}
     fragment GapFr on Gap {
         id,
@@ -90,7 +90,7 @@ export const ProcessFragment = gql`
     fragment ProcessFields on Process {
         __typename,
         ... on ParallelProcess {
-           ...ParallelProcessFr 
+            ...ParallelProcessFr
         }
         ... on ConcurrentProcess {
             ...ConcurrentProcessFr
@@ -111,6 +111,7 @@ export const ClusterFragment = gql`
             reportId,
             structureHash
         },
+        exampleTraceId,
         processes {
             key,
             value {

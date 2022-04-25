@@ -99,6 +99,7 @@ type SuggestResponse {
 }
 
 type TraceCluster {
+    exampleTraceId: String!
     id: ClusterId!
     processes: [KVStringProcess!]!
 }

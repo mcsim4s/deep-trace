@@ -11,9 +11,15 @@ import zio.stream._
 object TraceParser {
   type TraceParser = Has[Service]
 
-  case class ParsingResult(process: ParallelProcess, instances: Seq[ProcessInstance], current: ProcessInstance.Single)
+  case class TraceParsingState(
+      process: ParallelProcess,
+      instances: Seq[ProcessInstance],
+      current: ProcessInstance.Single,
+      containsErrors: Boolean,
+      exampleId: String
+  )
 
   trait Service {
-    def parse(rawTrace: RawTrace, operationName: String): Stream[RawTraceMappingError, ParsingResult]
+    def parse(rawTrace: RawTrace, operationName: String): Stream[RawTraceMappingError, TraceParsingState]
   }
 }

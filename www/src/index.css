@@ -23,7 +23,7 @@ code {
 }
 
 .stats-toggler {
-    height: 36px;
+    height: 30px;
     display: flex;
     align-items: center;
     cursor: pointer;
@@ -39,30 +39,36 @@ code {
     border-radius: 4px;
 }
 
-.gap {
-    height: 2px;
-    background: #ffd6df;
-    border-radius: 1px;
-}
-
 .concurrent {
     height: 12px;
     background: #3273dc;
     border-radius: 4px;
 }
 
-.process-legend {
-    background: hsl(0, 0%, 96%);
-    font-family: "Helvetica Neue", Helvetica, "Segoe UI", Roboto, Arial, sans-serif;
-    padding: 0.6em 2px !important;
-}
-
 .process-legend p {
     font-size: 13px;
+    line-height: 30px;
 }
 
 .process-legend small {
     font-size: 11px;
+}
+
+.gap {
+    height: 2px;
+    background: #ffd6df;
+    border-radius: 1px;
+}
+
+.process-legend {
+    background: hsl(0, 0%, 96%);
+    font-family: "Helvetica Neue", Helvetica, "Segoe UI", Roboto, Arial, sans-serif;
+    padding: 0 2px !important;
+    display: flex;
+}
+
+.process-legend .level {
+    height: 30px;
 }
 
 .trace-title-tab {

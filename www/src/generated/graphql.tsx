@@ -151,6 +151,7 @@ export type SuggestResponse = {
 export type TraceCluster = {
   __typename?: 'TraceCluster';
   id: ClusterId;
+  exampleTraceId: Scalars['String'];
   processes: Array<KvStringProcess>;
 };
 

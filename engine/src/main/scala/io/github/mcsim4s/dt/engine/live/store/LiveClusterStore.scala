@@ -1,5 +1,6 @@
 package io.github.mcsim4s.dt.engine.live.store
 
+import io.github.mcsim4s.dt.engine.TraceParser.TraceParsingState
 import io.github.mcsim4s.dt.engine.store.ClusterStore
 import io.github.mcsim4s.dt.engine.store.ClusterStore.ClusterStore
 import io.github.mcsim4s.dt.model.DeepTraceError.{CasConflict, ClusterNotFound, ReportNotFound}
@@ -27,8 +28,17 @@ class LiveClusterStore(clustersRef: TMap[String, Map[String, TraceCluster]], clo
       .flatMap(opt => ZSTM.fromOption(opt))
       .orElseFail(ClusterNotFound(id))
 
-  override def getOrCreate(reportId: String, root: ParallelProcess): UIO[TraceCluster] = {
-    val clusterId = ClusterId(reportId, root.id.hash)
+  private def fromParsingResult(reportId: String, parsingResult: TraceParsingState): TraceCluster =
+    TraceCluster(
+      ClusterId(reportId, parsingResult.process.id.hash),
+      parsingResult.process,
+      containsErrors = parsingResult.containsErrors,
+      stats = None,
+      exampleTraceId = parsingResult.exampleId
+    )
+
+  override def getOrCreate(reportId: String, root: TraceParsingState): UIO[TraceCluster] = {
+    val clusterId = ClusterId(reportId, root.process.id.hash)
     STM.atomically(
       for {
         opt <- clustersRef.get(clusterId.reportId)
@@ -37,13 +47,13 @@ class LiveClusterStore(clustersRef: TMap[String, Map[String, TraceCluster]], clo
             clusters.get(clusterId.rootHash) match {
               case Some(cluster) => STM.succeed(cluster)
               case None =>
-                val cluster = TraceCluster(clusterId, root, stats = None)
+                val cluster = fromParsingResult(reportId, root)
                 clustersRef
                   .put(clusterId.reportId, clusters + (clusterId.rootHash -> cluster))
                   .as(cluster)
             }
           case None =>
-            val cluster = TraceCluster(clusterId, root, stats = None)
+            val cluster = fromParsingResult(reportId, root)
             clustersRef.put(clusterId.reportId, Map(clusterId.rootHash -> cluster)).as(cluster)
         }
       } yield res

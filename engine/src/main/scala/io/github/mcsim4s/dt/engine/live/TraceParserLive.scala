@@ -1,8 +1,10 @@
 package io.github.mcsim4s.dt.engine.live
 
+import com.google.common.base.Charsets
+import com.google.common.io.BaseEncoding
 import com.google.protobuf.ByteString
 import io.github.mcsim4s.dt.engine.TraceParser
-import io.github.mcsim4s.dt.engine.TraceParser.{ParsingResult, TraceParser}
+import io.github.mcsim4s.dt.engine.TraceParser.{TraceParser, TraceParsingState}
 import io.github.mcsim4s.dt.engine.live.TraceParserLive._
 import io.github.mcsim4s.dt.engine.store.ProcessStore
 import io.github.mcsim4s.dt.engine.store.ProcessStore.ProcessStore
@@ -15,14 +17,16 @@ import zio.random.Random
 import zio.stream._
 
 import java.time.Instant
+import java.util.Base64
 import scala.concurrent.duration._
+import scala.jdk.CollectionConverters._
 
 class TraceParserLive(spanStore: ProcessStore.Service, random: Random.Service) extends TraceParser.Service {
 
   override def parse(
       rawTrace: RawTrace,
       operationsName: String
-  ): Stream[DeepTraceError.RawTraceMappingError, ParsingResult] = {
+  ): Stream[DeepTraceError.RawTraceMappingError, TraceParsingState] = {
     def pushRoot(ref: Ref[Seq[Span]], span: Span) =
       ref.update(_ :+ span)
 
@@ -70,7 +74,7 @@ class TraceParserLive(spanStore: ProcessStore.Service, random: Random.Service) e
       span: Span,
       parentToChildMap: ParentToChild,
       parentStart: Instant
-  ): IO[RawTraceMappingError, ParsingResult] =
+  ): IO[RawTraceMappingError, TraceParsingState] =
     for {
       parsedChildren <- ZIO.foreach(parentToChildMap.getOrElse(span.spanId, Seq.empty)) { child =>
         fromSpan(child, parentToChildMap, span.getStartTime.toInstant)
@@ -93,10 +97,12 @@ class TraceParserLive(spanStore: ProcessStore.Service, random: Random.Service) e
         start.toDuration,
         span.getDuration.asScala
       )
-    } yield ParsingResult(
+    } yield TraceParsingState(
       resultProcess,
       childInstances ++ concurrent.map(_.instance) ++ gapsInstances :+ resultInstant,
-      current = resultInstant
+      current = resultInstant,
+      containsErrors = parsedChildren.exists(_.containsErrors),
+      exampleId = span.traceId.toByteArray.drop(8).map(String.format("%02x", _)).mkString
     )
 
   def reduceConcurrent(
@@ -154,7 +160,6 @@ class TraceParserLive(spanStore: ProcessStore.Service, random: Random.Service) e
     }
 
   }
-
 }
 
 object TraceParserLive {
