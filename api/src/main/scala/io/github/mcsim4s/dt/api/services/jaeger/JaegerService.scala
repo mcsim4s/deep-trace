@@ -8,7 +8,7 @@ import io.jaegertracing.api_v2.query.{GetOperationsRequest, GetServicesRequest}
 import zio._
 
 object JaegerService {
-  type JaegerService = Has[Service]
+  type JaegerService = Service
 
   trait Service {
     def suggest(request: SuggestRequest): IO[DeepTraceError, SuggestResponse]
@@ -35,8 +35,11 @@ object JaegerService {
       )
   }
 
-  val layer: ZLayer[QueryServiceClient, Nothing, JaegerService] =
-    ZLayer.fromService[QueryServiceClient.Service, Service](Live.apply)
+  val layer: ZLayer[QueryServiceClient, Nothing, JaegerService] = ZLayer {
+    for {
+      queryService <- ZIO.service[QueryServiceClient.Service]
+    } yield Live(queryService)
+  }
 
   case class Queries(
       suggest: SuggestRequest => URIO[JaegerService, SuggestResponse]
@@ -47,6 +50,6 @@ object JaegerService {
 
   val queries: Queries =
     Queries(
-      suggest = request => ZIO.accessM[JaegerService](_.get.suggest(request)).apiRequest
+      suggest = request => ZIO.environmentWithZIO[JaegerService](_.get.suggest(request)).apiRequest
     )
 }

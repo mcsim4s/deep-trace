@@ -7,9 +7,9 @@ import io.github.mcsim4s.dt.model.Process.ProcessId
 import io.github.mcsim4s.dt.model.TraceCluster.ClusterId
 import io.github.mcsim4s.dt.model.{ProcessInstance, TraceCluster}
 import io.jaegertracing.api_v2.model.Span
-import zio.random.Random
 import zio.stm.{STM, TMap}
 import zio.{UIO, ZIO, ZLayer}
+import zio.Random
 
 class LiveProcessStore(spansRef: TMap[InstanceId, List[ProcessInstance]]) extends ProcessStore.Service {
 
@@ -33,5 +33,5 @@ object LiveProcessStore {
       spansRef <- STM.atomically(TMap.make[InstanceId, List[ProcessInstance]]())
     } yield new LiveProcessStore(spansRef)
 
-  val layer: ZLayer[Random, Nothing, ProcessStore] = makeService.toLayer
+  val layer: ZLayer[Any, Nothing, ProcessStore] = ZLayer(makeService)
 }

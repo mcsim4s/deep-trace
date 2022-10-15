@@ -5,17 +5,16 @@ import io.github.mcsim4s.dt.engine.store.ReportStore.ReportStore
 import io.github.mcsim4s.dt.model.DeepTraceError.{CasConflict, ReportNotFound}
 import io.github.mcsim4s.dt.model.{AnalysisReport, AnalysisRequest, DeepTraceError}
 import zio._
-import zio.clock.Clock
-import zio.random.Random
+import zio.Clock
 import zio.stm._
+import zio.Random
 
-class LiveReportStore(reportsRef: TMap[String, AnalysisReport], random: Random.Service, clock: Clock.Service)
-    extends ReportStore.Service {
+class LiveReportStore(reportsRef: TMap[String, AnalysisReport]) extends ReportStore.Service {
 
   override def create(request: AnalysisRequest): UIO[AnalysisReport] =
     for {
-      id <- random.nextUUID.map(_.toString)
-      now <- clock.instant
+      id <- Random.nextUUID.map(_.toString)
+      now <- Clock.instant
       report = AnalysisReport(
         id = id,
         createdAt = now,
@@ -35,7 +34,7 @@ class LiveReportStore(reportsRef: TMap[String, AnalysisReport], random: Random.S
       old <- get(reportId)
       result <- upd(old)
       _ <- updateCas(old, result)
-    } yield result).retry(CasRetryPolicy).provide(Has(clock))
+    } yield result).retry(CasRetryPolicy)
 
   private def updateCas(from: AnalysisReport, to: AnalysisReport): IO[DeepTraceError, AnalysisReport] =
     STM.atomically {
@@ -54,12 +53,10 @@ class LiveReportStore(reportsRef: TMap[String, AnalysisReport], random: Random.S
 }
 
 object LiveReportStore {
-  def makeService: ZIO[Random with Clock, Nothing, LiveReportStore] =
+  def makeService: ZIO[Any, Nothing, LiveReportStore] =
     for {
       reportsRef <- STM.atomically(TMap.make[String, AnalysisReport]())
-      random <- ZIO.service[Random.Service]
-      clock <- ZIO.service[Clock.Service]
-    } yield new LiveReportStore(reportsRef, random, clock)
+    } yield new LiveReportStore(reportsRef)
 
-  val layer: ZLayer[Random with Clock, Nothing, ReportStore] = makeService.toLayer
+  val layer: ZLayer[Any, Nothing, ReportStore] = ZLayer(makeService)
 }

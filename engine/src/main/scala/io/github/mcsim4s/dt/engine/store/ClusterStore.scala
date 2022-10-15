@@ -10,7 +10,7 @@ import zio._
 
 @accessible
 object ClusterStore {
-  type ClusterStore = Has[Service]
+  type ClusterStore = Service
 
   trait Service {
     def get(id: ClusterId): IO[ClusterNotFound, TraceCluster]

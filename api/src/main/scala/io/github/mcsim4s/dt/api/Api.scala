@@ -9,11 +9,11 @@ import io.github.mcsim4s.dt.api.model.{AnalysisReport, AnalysisRequest, ClusterI
 import io.github.mcsim4s.dt.api.services._
 import io.github.mcsim4s.dt.api.services.jaeger.JaegerService
 import io.github.mcsim4s.dt.api.services.jaeger.JaegerService.JaegerService
-import zio.clock.Clock
-import zio.console.Console
+import zio.Clock
 import zio.{RIO, URIO}
 
 import scala.concurrent.duration.Duration
+import zio.Console
 
 object Api extends GenericSchema[ApiService with JaegerService] {
   implicit val stateSchema = Schema.gen[Any, AnalysisReport.State]
@@ -56,7 +56,7 @@ object Api extends GenericSchema[ApiService with JaegerService] {
 
   val jaegerService: GraphQL[ApiService with JaegerService] = GraphQL.graphQL(RootResolver(JaegerService.queries))
 
-  val root: GraphQL[ApiService with JaegerService with Console with Clock] = Seq(
+  val root: GraphQL[ApiService with JaegerService] = Seq(
     clusters,
     reports,
     jaegerService

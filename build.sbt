@@ -43,7 +43,8 @@ val engine = (project in file("engine"))
       library.zioStreams,
       library.zioMacro,
       library.math,
-      library.zioMagic % Test
+      library.zioTest % Test,
+      library.zioTestSbt % Test
     )
   )
   .dependsOn(model)
@@ -54,7 +55,6 @@ val api = (project in file("api"))
     name := "api",
     libraryDependencies ++= Seq(
       library.grpc,
-      library.zioMagic,
       library.zioHttp,
       library.tapirZioServer,
       library.caliban,
@@ -72,13 +72,12 @@ import scalapb.compiler.{Version => VersionPb}
 lazy val library =
   new {
     object Version {
-      val openTelemetryVersion = "1.9.1"
-      val zioVersion = "1.0.13"
-      val zioMagicVersion = "0.3.11"
-      val grpcVersion = "1.43.2"
-      val calibanVersion = "1.3.2"
+      val openTelemetryVersion = "1.18.0"
+      val zioVersion = "2.0.2"
+      val grpcVersion = "1.49.2"
+      val calibanVersion = "2.0.1"
       val zioHttpVersion = "1.0.0.0-RC22"
-      val tapirZio = "0.20.0-M5"
+      val tapirZio = "1.1.2"
       val math = "3.6.1"
     }
     val openTelemetry =
@@ -88,7 +87,6 @@ lazy val library =
     val zioMacro = "dev.zio" %% "zio-macros" % Version.zioVersion
     val zioTest = "dev.zio" %% "zio-test" % Version.zioVersion
     val zioTestSbt = "dev.zio" %% "zio-test-sbt" % Version.zioVersion
-    val zioMagic = "io.github.kitlangton" %% "zio-magic" % Version.zioMagicVersion
     val zioHttp = "io.d11" %% "zhttp" % Version.zioHttpVersion
     val tapirZioServer = "com.softwaremill.sttp.tapir" %% "tapir-zio-http-server" % Version.tapirZio
     val grpc = "io.grpc" % "grpc-netty" % Version.grpcVersion

@@ -6,12 +6,12 @@ import io.github.mcsim4s.dt.model.{DeepTraceError, RawTrace}
 import io.jaegertracing.api_v2.query.ZioQuery.QueryServiceClient
 import io.jaegertracing.api_v2.query.{FindTracesRequest, SpansResponseChunk, TraceQueryParameters}
 import zio._
-import zio.clock.Clock
+import zio.Clock
 import zio.stream.ZStream
 
-class JaegerSource(jaegerClient: QueryServiceClient.Service, clock: Clock.Service) {
+class JaegerSource(jaegerClient: QueryServiceClient.Service) {
   def createSource(query: TraceQueryParameters): IO[DeepTraceError, RawTraceSource] =
-    ZIO.effectTotal {
+    ZIO.succeed {
       val stream: ZStream[Any, io.grpc.Status, SpansResponseChunk] =
         jaegerClient.findTraces(FindTracesRequest(query = Some(query)))
       stream.mapBoth(
@@ -26,10 +26,9 @@ class JaegerSource(jaegerClient: QueryServiceClient.Service, clock: Clock.Servic
 }
 
 object JaegerSource {
-  val makeService: ZIO[Clock with QueryServiceClient, Nothing, JaegerSource] = for {
+  val makeService: ZIO[QueryServiceClient, Nothing, JaegerSource] = for {
     client <- ZIO.service[QueryServiceClient.Service]
-    clock <- ZIO.service[Clock.Service]
-  } yield new JaegerSource(client, clock)
+  } yield new JaegerSource(client)
 
-  val layer: ZLayer[Clock with QueryServiceClient, Nothing, Has[JaegerSource]] = makeService.toLayer
+  val layer: ZLayer[QueryServiceClient, Nothing, JaegerSource] = ZLayer(makeService)
 }

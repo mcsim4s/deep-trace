@@ -8,13 +8,11 @@ import io.github.mcsim4s.dt.model.Process.ParallelProcess
 import io.github.mcsim4s.dt.model.{AnalysisReport, DeepTraceError, Process, TraceCluster}
 import io.github.mcsim4s.dt.model.TraceCluster.{ClusterId, ClusterSource}
 import zio._
-import zio.clock.Clock
-import zio.random.Random
+import zio.Clock
 import zio.stm._
 import zio.stream.ZStream
 
-class LiveClusterStore(clustersRef: TMap[String, Map[String, TraceCluster]], clock: Clock.Service)
-    extends ClusterStore.Service {
+class LiveClusterStore(clustersRef: TMap[String, Map[String, TraceCluster]]) extends ClusterStore.Service {
 
   override def get(id: ClusterId): IO[DeepTraceError.ClusterNotFound, TraceCluster] =
     STM.atomically(getStm(id))
@@ -62,10 +60,10 @@ class LiveClusterStore(clustersRef: TMap[String, Map[String, TraceCluster]], clo
 
   override def list(reportId: String): ClusterSource = {
     ZStream
-      .fromEffect {
+      .fromZIO {
         STM.atomically(clustersRef.getOrElse(reportId, Map.empty)).map(_.values.iterator)
       }
-      .flatMap(ZStream.fromIteratorTotal(_))
+      .flatMap(ZStream.fromIteratorSucceed(_))
   }
 
   override def update(id: ClusterId)(
@@ -75,7 +73,7 @@ class LiveClusterStore(clustersRef: TMap[String, Map[String, TraceCluster]], clo
       old <- get(id)
       result <- upd(old)
       _ <- updateCas(old, result)
-    } yield result).retry(CasRetryPolicy).provide(Has(clock))
+    } yield result).retry(CasRetryPolicy)
 
   private def updateCas(from: TraceCluster, to: TraceCluster): IO[DeepTraceError, TraceCluster] =
     STM.atomically {
@@ -90,11 +88,10 @@ class LiveClusterStore(clustersRef: TMap[String, Map[String, TraceCluster]], clo
 }
 
 object LiveClusterStore {
-  def makeService: ZIO[Clock, Nothing, LiveClusterStore] =
+  def makeService: ZIO[Any, Nothing, LiveClusterStore] =
     for {
       clustersRef <- STM.atomically(TMap.make[String, Map[String, TraceCluster]]())
-      clock <- ZIO.service[Clock.Service]
-    } yield new LiveClusterStore(clustersRef, clock)
+    } yield new LiveClusterStore(clustersRef)
 
-  val layer: ZLayer[Clock, Nothing, ClusterStore] = makeService.toLayer
+  val layer: ZLayer[Any, Nothing, ClusterStore] = ZLayer(makeService)
 }

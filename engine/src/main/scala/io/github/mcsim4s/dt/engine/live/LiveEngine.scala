@@ -12,9 +12,7 @@ import io.github.mcsim4s.dt.model.ProcessStats.DurationStats
 import io.github.mcsim4s.dt.model.TraceCluster.ClusterId
 import io.github.mcsim4s.dt.model._
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics
-import zio._
-import zio.console.Console
-import zio.random.Random
+import zio.{Console, _}
 
 import scala.concurrent.duration.Duration
 
@@ -22,9 +20,7 @@ class LiveEngine(
     reportStore: ReportStore.Service,
     clusterStore: ClusterStore.Service,
     traceParser: TraceParser.Service,
-    processStore: ProcessStore.Service,
-    console: Console.Service,
-    random: Random.Service
+    processStore: ProcessStore.Service
 ) extends Engine.Service {
 
   override def process(request: AnalysisRequest): IO[DeepTraceError, AnalysisReport] = {
@@ -32,14 +28,14 @@ class LiveEngine(
       report <- reportStore.create(request)
       _ <- parseTraces(report, request)
         .flatMap { clusters =>
-          ZIO.foreach_(clusters)(processCluster) *>
+          ZIO.foreachDiscard(clusters)(processCluster) *>
             reportStore.update(report.id) { _ =>
               ZIO.succeed(report.copy(state = AnalysisReport.ClustersBuilt(clusters.map(_.id))))
             }
         }
         .tapBoth(
-          err => console.putStrLnErr(s"Async clustering error. Err: $err").ignore,
-          _ => console.putStrLn("Async clustering complete").ignore
+          err => Console.printLineError(s"Async clustering error. Err: $err").ignore,
+          _ => Console.printLine("Async clustering complete").ignore
         )
         .forkDaemon
     } yield report
@@ -47,7 +43,7 @@ class LiveEngine(
 
   private def parseTraces(report: AnalysisReport, request: AnalysisRequest): IO[DeepTraceError, Seq[TraceCluster]] =
     request.traceSource
-      .tap(trace => console.putStrLn(s"Parsing another trace with ${trace.spans.size} spans").ignore)
+      .tap(trace => Console.printLine(s"Parsing another trace with ${trace.spans.size} spans").ignore)
       .flatMap(trace => traceParser.parse(trace, request.operation))
       .foreach(root => {
         clusterStore
@@ -95,13 +91,13 @@ class LiveEngine(
           ZIO
             .foreach(subProcesses)(processesStatsRecursive(clusterId))
             .map(_.reduce(_ ++ _))
-        } else IO.succeed(Map.empty)
+        } else ZIO.succeed(Map.empty)
     } yield Map(process.id -> currentStats) ++ children
 
   def singleProcessStats(clusterId: ClusterId)(process: Process): IO[DeepTraceError, ProcessStats] =
     for {
       spans <- processStore.list(clusterId, process.id)
-      duration <- ZIO.effectTotal {
+      duration <- ZIO.succeed {
         val duration = new DescriptiveStatistics()
         spans.foreach { span =>
           duration.addValue(span.duration.toNanos)
@@ -111,7 +107,7 @@ class LiveEngine(
       flat = ProcessStats.FlatStats(duration)
       result <- process match {
         case _: Process.ConcurrentProcess =>
-          ZIO.effectTotal {
+          ZIO.succeed {
             val subProcessCount = new DescriptiveStatistics()
             spans.foreach { span =>
               subProcessCount.addValue(span.asConcurrent.count)
@@ -126,7 +122,7 @@ class LiveEngine(
 
 object LiveEngine {
   def makeService: ZIO[
-    ReportStore with ClusterStore with TraceParser with ProcessStore with Console with Random,
+    ReportStore with ClusterStore with TraceParser with ProcessStore,
     Nothing,
     LiveEngine
   ] =
@@ -135,13 +131,11 @@ object LiveEngine {
       clusterStore <- ZIO.service[ClusterStore.Service]
       traceParser <- ZIO.service[TraceParser.Service]
       spanStore <- ZIO.service[ProcessStore.Service]
-      console <- ZIO.service[Console.Service]
-      random <- ZIO.service[Random.Service]
-    } yield new LiveEngine(reportStore, clusterStore, traceParser, spanStore, console, random)
+    } yield new LiveEngine(reportStore, clusterStore, traceParser, spanStore)
 
   val layer: ZLayer[
-    ReportStore with ClusterStore with TraceParser with ProcessStore with Console with Random,
+    ReportStore with ClusterStore with TraceParser with ProcessStore,
     Nothing,
     Engine
-  ] = makeService.toLayer
+  ] = ZLayer.fromZIO(makeService)
 }

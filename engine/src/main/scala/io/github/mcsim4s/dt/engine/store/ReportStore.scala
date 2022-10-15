@@ -7,7 +7,7 @@ import zio._
 
 @accessible
 object ReportStore {
-  type ReportStore = Has[Service]
+  type ReportStore = Service
 
   trait Service {
     def create(request: AnalysisRequest): UIO[AnalysisReport]

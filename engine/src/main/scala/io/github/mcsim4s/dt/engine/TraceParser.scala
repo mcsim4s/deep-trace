@@ -9,7 +9,7 @@ import zio.stream._
 
 @accessible
 object TraceParser {
-  type TraceParser = Has[Service]
+  type TraceParser = Service
 
   case class TraceParsingState(
       process: ParallelProcess,

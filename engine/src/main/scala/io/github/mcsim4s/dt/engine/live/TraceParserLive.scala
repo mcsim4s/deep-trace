@@ -1,27 +1,21 @@
 package io.github.mcsim4s.dt.engine.live
 
-import com.google.common.base.Charsets
-import com.google.common.io.BaseEncoding
 import com.google.protobuf.ByteString
 import io.github.mcsim4s.dt.engine.TraceParser
 import io.github.mcsim4s.dt.engine.TraceParser.{TraceParser, TraceParsingState}
 import io.github.mcsim4s.dt.engine.live.TraceParserLive._
 import io.github.mcsim4s.dt.engine.store.ProcessStore
-import io.github.mcsim4s.dt.engine.store.ProcessStore.ProcessStore
-import io.github.mcsim4s.dt.model._
 import io.github.mcsim4s.dt.model.DeepTraceError.RawTraceMappingError
 import io.github.mcsim4s.dt.model.Process._
+import io.github.mcsim4s.dt.model._
 import io.jaegertracing.api_v2.model.Span
-import zio._
-import zio.random.Random
 import zio.stream._
+import zio.{IO, Random, Ref, URLayer, ZIO, ZLayer}
 
 import java.time.Instant
-import java.util.Base64
 import scala.concurrent.duration._
-import scala.jdk.CollectionConverters._
 
-class TraceParserLive(spanStore: ProcessStore.Service, random: Random.Service) extends TraceParser.Service {
+class TraceParserLive(spanStore: ProcessStore.Service) extends TraceParser.Service {
 
   override def parse(
       rawTrace: RawTrace,
@@ -31,7 +25,7 @@ class TraceParserLive(spanStore: ProcessStore.Service, random: Random.Service) e
       ref.update(_ :+ span)
 
     def updateParentChildMap(ref: Ref[ParentToChild], span: Span) =
-      ZIO.foreach_(span.references.filter(_.refType.isChildOf))(r => ref.update(_.append(r.spanId, span)))
+      ZIO.foreachDiscard(span.references.filter(_.refType.isChildOf))(r => ref.update(_.append(r.spanId, span)))
 
     val parseOne = for {
       rootRefs <- Ref.make[Seq[Span]](Seq.empty)
@@ -62,12 +56,12 @@ class TraceParserLive(spanStore: ProcessStore.Service, random: Random.Service) e
             }
             rootRefs.set(newStack)
           }
-          .repeatWhileM(_ => rootRefs.get.map(_.exists(_.operationName != operationsName)))
+          .repeatWhileZIO(_ => rootRefs.get.map(_.exists(_.operationName != operationsName)))
       roots <- rootRefs.get
       parsed <- ZIO.foreach(roots)(r => fromSpan(r, parentToChildMap, r.getStartTime.toInstant))
     } yield parsed
 
-    ZStream.fromEffect(parseOne).flatMap(chunk => ZStream.fromIterable(chunk))
+    ZStream.fromZIO(parseOne).flatMap(chunk => ZStream.fromIterable(chunk))
   }
 
   def fromSpan(
@@ -181,6 +175,9 @@ object TraceParserLive {
 
   case class ParsedProcess[+T <: Process](process: T, instance: ProcessInstance)
 
-  val layer: URLayer[ProcessStore with Random, TraceParser] =
-    ZLayer.fromServices[ProcessStore.Service, Random.Service, TraceParser.Service](new TraceParserLive(_, _))
+  val layer: URLayer[ProcessStore.Service, TraceParser] = ZLayer {
+    for {
+      processStore <- ZIO.service[ProcessStore.Service]
+    } yield new TraceParserLive(processStore)
+  }
 }

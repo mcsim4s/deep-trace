@@ -9,21 +9,17 @@ import io.github.mcsim4s.dt.api.model.{
   TraceCluster => ApiCluster
 }
 import io.github.mcsim4s.dt.engine.Engine
-import io.github.mcsim4s.dt.engine.Engine.Engine
 import io.github.mcsim4s.dt.engine.source.JaegerSource
-import io.github.mcsim4s.dt.engine.store.ClusterStore.ClusterStore
-import io.github.mcsim4s.dt.engine.store.ReportStore.ReportStore
 import io.github.mcsim4s.dt.engine.store.{ClusterStore, ReportStore}
-import io.github.mcsim4s.dt.model.DeepTraceError.{ClusterNotFound, ReportNotFound}
+import io.github.mcsim4s.dt.model.DeepTraceError.ReportNotFound
 import io.github.mcsim4s.dt.model.{AnalysisRequest, DeepTraceError}
 import io.jaegertracing.api_v2.query.TraceQueryParameters
-import zio.clock.Clock
 import zio.macros.accessible
-import zio.{Has, IO, ZLayer}
+import zio.{IO, ZIO, ZLayer}
 
 @accessible
 object ApiService {
-  type ApiService = Has[Service]
+  type ApiService = Service
 
   trait Service {
     def getCluster(id: ApiClusterId): IO[DeepTraceError, ApiCluster]
@@ -36,8 +32,7 @@ object ApiService {
       engine: Engine.Service,
       reportStore: ReportStore.Service,
       clusterStore: ClusterStore.Service,
-      jaegerSource: JaegerSource,
-      clock: Clock.Service
+      jaegerSource: JaegerSource
   ) extends Service {
     override def getCluster(id: ApiClusterId): IO[DeepTraceError, ApiCluster] = {
       clusterStore.get(fromApi(id)).flatMap(toApi)
@@ -77,9 +72,18 @@ object ApiService {
     override def getReport(id: String): IO[ReportNotFound, ApiReport] = reportStore.get(id).map(toApi)
   }
 
-  val live: ZLayer[Engine with ReportStore with ClusterStore with Has[JaegerSource] with Clock, Nothing, ApiService] =
-    ZLayer
-      .fromServices[Engine.Service, ReportStore.Service, ClusterStore.Service, JaegerSource, Clock.Service, Service](
-        new Live(_, _, _, _, _)
-      )
+  val live: ZLayer[
+    Engine.Service with ReportStore.Service with ClusterStore.Service with JaegerSource,
+    Nothing,
+    ApiService
+  ] = {
+    ZLayer {
+      for {
+        engine <- ZIO.service[Engine.Service]
+        reportStore <- ZIO.service[ReportStore.Service]
+        clusterStore <- ZIO.service[ClusterStore.Service]
+        jaegerSource <- ZIO.service[JaegerSource]
+      } yield new Live(engine, reportStore, clusterStore, jaegerSource)
+    }
+  }
 }

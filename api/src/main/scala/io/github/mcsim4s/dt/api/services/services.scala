@@ -5,8 +5,9 @@ import caliban.{CalibanError, GraphQLRequest, GraphQLResponse}
 import io.github.mcsim4s.dt.model.DeepTraceError
 import io.github.mcsim4s.dt.model.DeepTraceError._
 import zio._
-import zio.clock.Clock
-import zio.console.{Console, putStrLn}
+import zio.Clock
+import zio.Console
+import zio.Console.printLine
 
 package object services {
   implicit class ApiRequest[R, A](val request: ZIO[R, DeepTraceError, A]) {
@@ -22,9 +23,9 @@ package object services {
     }
   }
 
-  lazy val logging: OverallWrapper[Console with Clock] =
-    new OverallWrapper[Console with Clock] {
-      def wrap[R1 <: Console with Clock](
+  lazy val logging: OverallWrapper[Any] =
+    new OverallWrapper[Any] {
+      def wrap[R1 <: Any](
           process: GraphQLRequest => ZIO[R1, Nothing, GraphQLResponse[CalibanError]]
       ): GraphQLRequest => ZIO[R1, Nothing, GraphQLResponse[CalibanError]] =
         request =>
@@ -32,7 +33,7 @@ package object services {
             .tap {
               case (processTime, response) =>
                 ZIO.when(response.errors.isEmpty)(
-                  putStrLn(
+                  printLine(
                     s"${request.operationName.getOrElse("EMPTY")} is performed in ${processTime.toMillis}ms"
                   ).orDie
                 )

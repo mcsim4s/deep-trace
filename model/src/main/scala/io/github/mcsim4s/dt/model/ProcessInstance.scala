@@ -11,7 +11,7 @@ sealed trait ProcessInstance {
   def asConcurrent: ProcessInstance.Concurrent =
     this match {
       case concurrent: ProcessInstance.Concurrent => concurrent
-      case single: ProcessInstance.Single =>
+      case _: ProcessInstance.Single =>
         throw new IllegalStateException(s"Expected concurrent instance but got ${this.getClass.getName}")
     }
 }

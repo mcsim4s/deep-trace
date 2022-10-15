@@ -4,11 +4,11 @@ import io.github.mcsim4s.dt.model.Process.ProcessId
 import io.github.mcsim4s.dt.model.ProcessInstance
 import io.github.mcsim4s.dt.model.TraceCluster.ClusterId
 import zio.macros.accessible
-import zio.{Has, UIO}
+import zio.UIO
 
 @accessible
 object ProcessStore {
-  type ProcessStore = Has[Service]
+  type ProcessStore = Service
 
   trait Service {
     def add(clusterId: ClusterId, instance: ProcessInstance): UIO[Unit]

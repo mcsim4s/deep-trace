@@ -1,18 +1,14 @@
 package io.github.mcsim4s.dt.engine
 
 import com.google.protobuf.ByteString
-import io.github.mcsim4s.dt.engine.TraceParser.TraceParser
 import io.github.mcsim4s.dt.engine.live.TraceParserLive
 import io.github.mcsim4s.dt.engine.live.store.LiveProcessStore
 import io.github.mcsim4s.dt.model.RawTrace
 import io.jaegertracing.api_v2.model.{Span, SpanRef, SpanRefType}
-import zio.ZLayer
 import zio.test.Assertion.{equalTo, hasField, hasSize, isSome}
-import zio.test.environment.TestEnvironment
-import zio.test.{DefaultRunnableSpec, ZSpec, assert, assertM}
-import zio.magic._
+import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assert}
 
-object ClusterStatsParserSpec extends DefaultRunnableSpec {
+object ClusterStatsParserSpec extends ZIOSpecDefault {
 
   val singleSpanTrace: RawTrace = RawTrace(
     Seq(
@@ -49,29 +45,23 @@ object ClusterStatsParserSpec extends DefaultRunnableSpec {
     )
   }
 
-  override def spec: ZSpec[TestEnvironment, Any] =
+  override def spec: Spec[TestEnvironment, Any] =
     suite("Trace conversions spec")(
-      testM("convert singe span raw trace to trace") {
-        assertM(
-          TraceParser
-            .parse(singleSpanTrace, "single operation")
-            .runHead
-//            .tap(trace => zio.console.putStrLn(trace.toString))
-        )(isSome(hasField("operation", _.process.operation, equalTo("single operation"))))
+      test("convert singe span raw trace to trace") {
+        TraceParser
+          .parse(singleSpanTrace, "single operation")
+          .runHead
+          .map(assert(_)(isSome(hasField("operation", _.process.operation, equalTo("single operation")))))
       },
-      testM("Convert one child raw trace to trace") {
-        assertM(
-          TraceParser
-            .parse(singleChildTrace, "single child operation")
-            .runHead
-//              .tap(trace => zio.console.putStrLn(trace.toString))
-        )(isSome(hasField("children", _.process.children, hasSize(equalTo(1)))))
+      test("Convert one child raw trace to trace") {
+        TraceParser
+          .parse(singleChildTrace, "single child operation")
+          .runHead
+          .map(assert(_)(isSome(hasField("children", _.process.children, hasSize(equalTo(1))))))
       }
-    ).provideCustomLayerShared(
-      ZLayer.wireSome[TestEnvironment, TestEnvironment with TraceParser](
-        LiveProcessStore.layer,
-        TraceParserLive.layer
-      )
+    ).provideShared(
+      LiveProcessStore.layer,
+      TraceParserLive.layer
     )
 
 }
