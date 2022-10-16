@@ -2,20 +2,13 @@ package io.github.mcsim4s.dt.engine.store
 
 import io.github.mcsim4s.dt.engine.TraceParser.TraceParsingState
 import io.github.mcsim4s.dt.model.DeepTraceError.ClusterNotFound
-import io.github.mcsim4s.dt.model.Process.ParallelProcess
-import io.github.mcsim4s.dt.model.{DeepTraceError, Process, TraceCluster}
 import io.github.mcsim4s.dt.model.TraceCluster.{ClusterId, ClusterSource}
-import zio.macros.accessible
+import io.github.mcsim4s.dt.model.{DeepTraceError, TraceCluster}
 import zio._
 
-@accessible
-object ClusterStore {
-  type ClusterStore = Service
-
-  trait Service {
-    def get(id: ClusterId): IO[ClusterNotFound, TraceCluster]
-    def getOrCreate(reportId: String, root: TraceParsingState): UIO[TraceCluster]
-    def list(reportId: String): ClusterSource
-    def update(id: ClusterId)(upd: TraceCluster => IO[DeepTraceError, TraceCluster]): IO[DeepTraceError, TraceCluster]
-  }
+trait ClusterStore {
+  def get(id: ClusterId): IO[ClusterNotFound, TraceCluster]
+  def getOrCreate(reportId: String, root: TraceParsingState): UIO[TraceCluster]
+  def list(reportId: String): ClusterSource
+  def update(id: ClusterId)(upd: TraceCluster => IO[DeepTraceError, TraceCluster]): IO[DeepTraceError, TraceCluster]
 }

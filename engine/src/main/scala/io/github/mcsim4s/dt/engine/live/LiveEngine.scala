@@ -1,10 +1,7 @@
 package io.github.mcsim4s.dt.engine.live
 
-import io.github.mcsim4s.dt.engine.Engine.Engine
-import io.github.mcsim4s.dt.engine.TraceParser.TraceParser
-import io.github.mcsim4s.dt.engine.store.ClusterStore.ClusterStore
-import io.github.mcsim4s.dt.engine.store.ProcessStore.ProcessStore
-import io.github.mcsim4s.dt.engine.store.ReportStore.ReportStore
+import io.github.mcsim4s.dt.engine.Engine
+import io.github.mcsim4s.dt.engine.TraceParser
 import io.github.mcsim4s.dt.engine.store.{ClusterStore, ProcessStore, ReportStore}
 import io.github.mcsim4s.dt.engine.{Engine, TraceParser}
 import io.github.mcsim4s.dt.model.Process.ProcessId
@@ -17,11 +14,11 @@ import zio.{Console, _}
 import scala.concurrent.duration.Duration
 
 class LiveEngine(
-    reportStore: ReportStore.Service,
-    clusterStore: ClusterStore.Service,
-    traceParser: TraceParser.Service,
-    processStore: ProcessStore.Service
-) extends Engine.Service {
+    reportStore: ReportStore,
+    clusterStore: ClusterStore,
+    traceParser: TraceParser,
+    processStore: ProcessStore
+) extends Engine {
 
   override def process(request: AnalysisRequest): IO[DeepTraceError, AnalysisReport] = {
     for {
@@ -127,10 +124,10 @@ object LiveEngine {
     LiveEngine
   ] =
     for {
-      reportStore <- ZIO.service[ReportStore.Service]
-      clusterStore <- ZIO.service[ClusterStore.Service]
-      traceParser <- ZIO.service[TraceParser.Service]
-      spanStore <- ZIO.service[ProcessStore.Service]
+      reportStore <- ZIO.service[ReportStore]
+      clusterStore <- ZIO.service[ClusterStore]
+      traceParser <- ZIO.service[TraceParser]
+      spanStore <- ZIO.service[ProcessStore]
     } yield new LiveEngine(reportStore, clusterStore, traceParser, spanStore)
 
   val layer: ZLayer[

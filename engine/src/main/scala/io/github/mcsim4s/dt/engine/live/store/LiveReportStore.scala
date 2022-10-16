@@ -1,7 +1,6 @@
 package io.github.mcsim4s.dt.engine.live.store
 
 import io.github.mcsim4s.dt.engine.store.ReportStore
-import io.github.mcsim4s.dt.engine.store.ReportStore.ReportStore
 import io.github.mcsim4s.dt.model.DeepTraceError.{CasConflict, ReportNotFound}
 import io.github.mcsim4s.dt.model.{AnalysisReport, AnalysisRequest, DeepTraceError}
 import zio._
@@ -9,7 +8,7 @@ import zio.Clock
 import zio.stm._
 import zio.Random
 
-class LiveReportStore(reportsRef: TMap[String, AnalysisReport]) extends ReportStore.Service {
+class LiveReportStore(reportsRef: TMap[String, AnalysisReport]) extends ReportStore {
 
   override def create(request: AnalysisRequest): UIO[AnalysisReport] =
     for {

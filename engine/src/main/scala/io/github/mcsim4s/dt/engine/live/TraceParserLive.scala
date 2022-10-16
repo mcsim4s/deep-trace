@@ -2,7 +2,7 @@ package io.github.mcsim4s.dt.engine.live
 
 import com.google.protobuf.ByteString
 import io.github.mcsim4s.dt.engine.TraceParser
-import io.github.mcsim4s.dt.engine.TraceParser.{TraceParser, TraceParsingState}
+import io.github.mcsim4s.dt.engine.TraceParser._
 import io.github.mcsim4s.dt.engine.live.TraceParserLive._
 import io.github.mcsim4s.dt.engine.store.ProcessStore
 import io.github.mcsim4s.dt.model.DeepTraceError.RawTraceMappingError
@@ -10,12 +10,12 @@ import io.github.mcsim4s.dt.model.Process._
 import io.github.mcsim4s.dt.model._
 import io.jaegertracing.api_v2.model.Span
 import zio.stream._
-import zio.{IO, Random, Ref, URLayer, ZIO, ZLayer}
+import zio.{IO, Ref, URLayer, ZIO, ZLayer}
 
 import java.time.Instant
 import scala.concurrent.duration._
 
-class TraceParserLive(spanStore: ProcessStore.Service) extends TraceParser.Service {
+class TraceParserLive(spanStore: ProcessStore) extends TraceParser {
 
   override def parse(
       rawTrace: RawTrace,
@@ -175,9 +175,9 @@ object TraceParserLive {
 
   case class ParsedProcess[+T <: Process](process: T, instance: ProcessInstance)
 
-  val layer: URLayer[ProcessStore.Service, TraceParser] = ZLayer {
+  val layer: URLayer[ProcessStore, TraceParser] = ZLayer {
     for {
-      processStore <- ZIO.service[ProcessStore.Service]
+      processStore <- ZIO.service[ProcessStore]
     } yield new TraceParserLive(processStore)
   }
 }

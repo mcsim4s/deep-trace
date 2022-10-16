@@ -2,16 +2,13 @@ package io.github.mcsim4s.dt.engine.live.store
 
 import io.github.mcsim4s.dt.engine.live.store.LiveProcessStore.InstanceId
 import io.github.mcsim4s.dt.engine.store.ProcessStore
-import io.github.mcsim4s.dt.engine.store.ProcessStore.ProcessStore
 import io.github.mcsim4s.dt.model.Process.ProcessId
 import io.github.mcsim4s.dt.model.TraceCluster.ClusterId
 import io.github.mcsim4s.dt.model.{ProcessInstance, TraceCluster}
-import io.jaegertracing.api_v2.model.Span
 import zio.stm.{STM, TMap}
 import zio.{UIO, ZIO, ZLayer}
-import zio.Random
 
-class LiveProcessStore(spansRef: TMap[InstanceId, List[ProcessInstance]]) extends ProcessStore.Service {
+class LiveProcessStore(spansRef: TMap[InstanceId, List[ProcessInstance]]) extends ProcessStore {
 
   override def add(clusterId: TraceCluster.ClusterId, instance: ProcessInstance): UIO[Unit] =
     STM.atomically {

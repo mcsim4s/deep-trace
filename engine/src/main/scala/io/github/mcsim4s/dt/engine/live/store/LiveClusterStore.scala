@@ -2,17 +2,14 @@ package io.github.mcsim4s.dt.engine.live.store
 
 import io.github.mcsim4s.dt.engine.TraceParser.TraceParsingState
 import io.github.mcsim4s.dt.engine.store.ClusterStore
-import io.github.mcsim4s.dt.engine.store.ClusterStore.ClusterStore
-import io.github.mcsim4s.dt.model.DeepTraceError.{CasConflict, ClusterNotFound, ReportNotFound}
-import io.github.mcsim4s.dt.model.Process.ParallelProcess
-import io.github.mcsim4s.dt.model.{AnalysisReport, DeepTraceError, Process, TraceCluster}
+import io.github.mcsim4s.dt.model.DeepTraceError.{CasConflict, ClusterNotFound}
 import io.github.mcsim4s.dt.model.TraceCluster.{ClusterId, ClusterSource}
+import io.github.mcsim4s.dt.model.{DeepTraceError, TraceCluster}
 import zio._
-import zio.Clock
 import zio.stm._
 import zio.stream.ZStream
 
-class LiveClusterStore(clustersRef: TMap[String, Map[String, TraceCluster]]) extends ClusterStore.Service {
+class LiveClusterStore(clustersRef: TMap[String, Map[String, TraceCluster]]) extends ClusterStore {
 
   override def get(id: ClusterId): IO[DeepTraceError.ClusterNotFound, TraceCluster] =
     STM.atomically(getStm(id))

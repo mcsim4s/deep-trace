@@ -5,16 +5,11 @@ import io.github.mcsim4s.dt.model.{AnalysisReport, AnalysisRequest, DeepTraceErr
 import zio.macros.accessible
 import zio._
 
-@accessible
-object ReportStore {
-  type ReportStore = Service
-
-  trait Service {
-    def create(request: AnalysisRequest): UIO[AnalysisReport]
-    def list(): UIO[List[AnalysisReport]]
-    def get(id: String): IO[ReportNotFound, AnalysisReport]
-    def update(reportId: String)(
-        upd: AnalysisReport => IO[DeepTraceError, AnalysisReport]
-    ): IO[DeepTraceError, AnalysisReport]
-  }
+trait ReportStore {
+  def create(request: AnalysisRequest): UIO[AnalysisReport]
+  def list(): UIO[List[AnalysisReport]]
+  def get(id: String): IO[ReportNotFound, AnalysisReport]
+  def update(reportId: String)(
+      upd: AnalysisReport => IO[DeepTraceError, AnalysisReport]
+  ): IO[DeepTraceError, AnalysisReport]
 }

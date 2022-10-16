@@ -1,15 +1,18 @@
 package io.github.mcsim4s.dt.engine
 
+import io.github.mcsim4s.dt.engine.TraceParser._
 import io.github.mcsim4s.dt.model.DeepTraceError.RawTraceMappingError
 import io.github.mcsim4s.dt.model.Process.ParallelProcess
-import io.github.mcsim4s.dt.model.{Process, ProcessInstance, RawTrace}
-import zio._
-import zio.macros.accessible
+import io.github.mcsim4s.dt.model.{ProcessInstance, RawTrace}
 import zio.stream._
 
-@accessible
+trait TraceParser {
+  def parse(rawTrace: RawTrace, operationName: String): Stream[RawTraceMappingError, TraceParsingState]
+}
+
 object TraceParser {
-  type TraceParser = Service
+  def parse(rawTrace: RawTrace, operationName: String): ZStream[TraceParser, RawTraceMappingError, TraceParsingState] =
+    ZStream.serviceWithStream[TraceParser](_.parse(rawTrace, operationName))
 
   case class TraceParsingState(
       process: ParallelProcess,
@@ -19,7 +22,4 @@ object TraceParser {
       exampleId: String
   )
 
-  trait Service {
-    def parse(rawTrace: RawTrace, operationName: String): Stream[RawTraceMappingError, TraceParsingState]
-  }
 }

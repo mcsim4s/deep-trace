@@ -4,7 +4,7 @@ import caliban.Value.IntValue.LongNumber
 import caliban._
 import caliban.schema.{GenericSchema, Schema}
 import caliban.wrappers.Wrappers._
-import io.github.mcsim4s.dt.api.ApiService.ApiService
+import io.github.mcsim4s.dt.api.ApiService
 import io.github.mcsim4s.dt.api.model.{AnalysisReport, AnalysisRequest, ClusterId, TraceCluster}
 import io.github.mcsim4s.dt.api.services._
 import io.github.mcsim4s.dt.api.services.jaeger.JaegerService

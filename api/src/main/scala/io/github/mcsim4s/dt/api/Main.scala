@@ -1,14 +1,14 @@
 package io.github.mcsim4s.dt.api
 
 import caliban.{CalibanError, ZHttpAdapter}
-import io.github.mcsim4s.dt.api.ApiService.ApiService
+import io.github.mcsim4s.dt.api.ApiService
 import io.github.mcsim4s.dt.api.services.jaeger.JaegerService
 import io.github.mcsim4s.dt.api.services.jaeger.JaegerService.JaegerService
-import io.github.mcsim4s.dt.engine.Engine.Engine
+import io.github.mcsim4s.dt.engine.Engine
 import io.github.mcsim4s.dt.engine.live.store.{LiveClusterStore, LiveProcessStore, LiveReportStore}
 import io.github.mcsim4s.dt.engine.live.{LiveEngine, TraceParserLive}
 import io.github.mcsim4s.dt.engine.source.JaegerSource
-import io.github.mcsim4s.dt.engine.store.ClusterStore.ClusterStore
+import io.github.mcsim4s.dt.engine.store.ClusterStore
 import io.grpc.ManagedChannelBuilder
 import io.jaegertracing.api_v2.query.ZioQuery.QueryServiceClient
 import io.netty.handler.codec.http.{HttpHeaderNames, HttpHeaderValues}

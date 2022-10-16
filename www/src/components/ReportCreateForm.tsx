@@ -51,7 +51,9 @@ export default function ReportCreateForm(props: AddReportFormProps) {
     createReportMutation
   )
   let {data, refetch} = useQuery<Queries, QueriesSuggestArgs>(getSuggestQuery, {
-    variables: {}
+    variables: {
+        serviceName: null
+    }
   })
 
   const services: string[] = data?.suggest.services || ["loading..."];

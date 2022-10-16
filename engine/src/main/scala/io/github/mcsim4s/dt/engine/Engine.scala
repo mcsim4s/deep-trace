@@ -1,14 +1,13 @@
 package io.github.mcsim4s.dt.engine
 
 import io.github.mcsim4s.dt.model.{AnalysisReport, AnalysisRequest, DeepTraceError}
-import zio.macros.accessible
-import zio.IO
+import zio._
 
-@accessible
+trait Engine {
+  def process(request: AnalysisRequest): IO[DeepTraceError, AnalysisReport]
+}
+
 object Engine {
-  type Engine = Service
-
-  trait Service {
-    def process(request: AnalysisRequest): IO[DeepTraceError, AnalysisReport]
-  }
+  def process(request: AnalysisRequest): ZIO[Engine, DeepTraceError, AnalysisReport] =
+    ZIO.serviceWithZIO[Engine](_.process(request))
 }

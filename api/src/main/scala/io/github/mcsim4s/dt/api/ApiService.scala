@@ -14,26 +14,32 @@ import io.github.mcsim4s.dt.engine.store.{ClusterStore, ReportStore}
 import io.github.mcsim4s.dt.model.DeepTraceError.ReportNotFound
 import io.github.mcsim4s.dt.model.{AnalysisRequest, DeepTraceError}
 import io.jaegertracing.api_v2.query.TraceQueryParameters
-import zio.macros.accessible
 import zio.{IO, ZIO, ZLayer}
 
-@accessible
-object ApiService {
-  type ApiService = Service
+trait ApiService {
+  def getCluster(id: ApiClusterId): IO[DeepTraceError, ApiCluster]
+  def createReport(request: ApiAnalysisRequest): IO[DeepTraceError, ApiReport]
+  def listReports(): IO[ReportNotFound, List[ApiReport]]
+  def getReport(id: String): IO[DeepTraceError, ApiReport]
+}
 
-  trait Service {
-    def getCluster(id: ApiClusterId): IO[DeepTraceError, ApiCluster]
-    def createReport(request: ApiAnalysisRequest): IO[DeepTraceError, ApiReport]
-    def listReports(): IO[ReportNotFound, List[ApiReport]]
-    def getReport(id: String): IO[DeepTraceError, ApiReport]
-  }
+object ApiService {
+
+  def getCluster(id: ApiClusterId): ZIO[ApiService, DeepTraceError, ApiCluster] =
+    ZIO.serviceWithZIO[ApiService](_.getCluster(id))
+  def createReport(request: ApiAnalysisRequest): ZIO[ApiService, DeepTraceError, ApiReport] =
+    ZIO.serviceWithZIO[ApiService](_.createReport(request))
+  def listReports(): ZIO[ApiService, ReportNotFound, List[ApiReport]] =
+    ZIO.serviceWithZIO[ApiService](_.listReports())
+  def getReport(id: String): ZIO[ApiService, DeepTraceError, ApiReport] =
+    ZIO.serviceWithZIO[ApiService](_.getReport(id))
 
   class Live(
-      engine: Engine.Service,
-      reportStore: ReportStore.Service,
-      clusterStore: ClusterStore.Service,
+      engine: Engine,
+      reportStore: ReportStore,
+      clusterStore: ClusterStore,
       jaegerSource: JaegerSource
-  ) extends Service {
+  ) extends ApiService {
     override def getCluster(id: ApiClusterId): IO[DeepTraceError, ApiCluster] = {
       clusterStore.get(fromApi(id)).flatMap(toApi)
     }
@@ -73,15 +79,15 @@ object ApiService {
   }
 
   val live: ZLayer[
-    Engine.Service with ReportStore.Service with ClusterStore.Service with JaegerSource,
+    Engine with ReportStore with ClusterStore with JaegerSource,
     Nothing,
     ApiService
   ] = {
     ZLayer {
       for {
-        engine <- ZIO.service[Engine.Service]
-        reportStore <- ZIO.service[ReportStore.Service]
-        clusterStore <- ZIO.service[ClusterStore.Service]
+        engine <- ZIO.service[Engine]
+        reportStore <- ZIO.service[ReportStore]
+        clusterStore <- ZIO.service[ClusterStore]
         jaegerSource <- ZIO.service[JaegerSource]
       } yield new Live(engine, reportStore, clusterStore, jaegerSource)
     }
