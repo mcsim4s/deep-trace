@@ -9,11 +9,14 @@ case class AnalysisReport(
     createdAt: Instant,
     service: String,
     operation: String,
-    state: State
-)
+    state: State)
 
 object AnalysisReport {
   sealed trait State
+
+  case object New extends State
+
+  case object Fetching extends State
 
   case object Clustering extends State
 

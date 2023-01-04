@@ -17,21 +17,19 @@ import zio.Console
 
 object Api extends GenericSchema[ApiService with JaegerService] {
   implicit val stateSchema = Schema.gen[Any, AnalysisReport.State]
-  implicit lazy val durationSchema: Schema[Any, Duration] =
+
+  implicit val durationSchema: Schema[Any, Duration] =
     scalarSchema("Duration", None, None, duration => LongNumber(duration.toNanos))
 
   case class ClusterQueries(
-      getCluster: ClusterId => URIO[ApiService, TraceCluster]
-  )
+      getCluster: ClusterId => URIO[ApiService, TraceCluster])
 
   case class ReportQueries(
       listReports: RIO[ApiService, List[AnalysisReport]],
-      getReport: String => RIO[ApiService, AnalysisReport]
-  )
+      getReport: String => RIO[ApiService, AnalysisReport])
 
   case class ReportsMutations(
-      createReport: AnalysisRequest => RIO[ApiService, AnalysisReport]
-  )
+      createReport: AnalysisRequest => RIO[ApiService, AnalysisReport])
 
   val clusters: GraphQL[ApiService with JaegerService] = GraphQL.graphQL(
     RootResolver(
@@ -45,7 +43,7 @@ object Api extends GenericSchema[ApiService with JaegerService] {
     RootResolver(
       ReportQueries(
         listReports = ApiService.listReports().orDieWith(err => new IllegalStateException(err.message)),
-        getReport = (id) => ApiService.getReport(id).orDieWith(err => new IllegalStateException(err.message))
+        getReport = id => ApiService.getReport(id).orDieWith(err => new IllegalStateException(err.message))
       ),
       ReportsMutations(
         createReport =

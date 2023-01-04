@@ -3,6 +3,7 @@ package io.github.mcsim4s.dt.model
 import io.github.mcsim4s.dt.model.TraceCluster.ClusterId
 import io.grpc.Status
 
+import java.util.UUID
 import scala.language.implicitConversions
 
 sealed trait DeepTraceError {
@@ -20,7 +21,7 @@ object DeepTraceError {
     val message = s"Grpc service '$service' call error. Status: $status"
   }
 
-  case class ReportNotFound(id: String) extends DeepTraceError {
+  case class DeepTraceTaskNotFound(id: UUID) extends DeepTraceError {
     val message = s"Analysis report with id: $id not found"
   }
 
@@ -30,5 +31,9 @@ object DeepTraceError {
 
   case class CasConflict(entityType: String, id: String) extends DeepTraceError {
     val message = s"$entityType update conflict for $id"
+  }
+
+  case class UnexpectedDbError(operationName: String, cause: Throwable) extends DeepTraceError {
+    override val message: String = s"Db operation '$operationName' failed. Cause message: '${cause.getMessage}'"
   }
 }

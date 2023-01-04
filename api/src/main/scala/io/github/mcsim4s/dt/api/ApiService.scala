@@ -10,16 +10,18 @@ import io.github.mcsim4s.dt.api.model.{
 }
 import io.github.mcsim4s.dt.engine.Engine
 import io.github.mcsim4s.dt.engine.source.JaegerSource
-import io.github.mcsim4s.dt.engine.store.{ClusterStore, ReportStore}
-import io.github.mcsim4s.dt.model.DeepTraceError.ReportNotFound
+import io.github.mcsim4s.dt.engine.store.{ClusterStore, TaskStore}
+import io.github.mcsim4s.dt.model.DeepTraceError.DeepTraceTaskNotFound
 import io.github.mcsim4s.dt.model.{AnalysisRequest, DeepTraceError}
 import io.jaegertracing.api_v2.query.TraceQueryParameters
 import zio.{IO, ZIO, ZLayer}
 
+import java.util.UUID
+
 trait ApiService {
   def getCluster(id: ApiClusterId): IO[DeepTraceError, ApiCluster]
   def createReport(request: ApiAnalysisRequest): IO[DeepTraceError, ApiReport]
-  def listReports(): IO[ReportNotFound, List[ApiReport]]
+  def listReports(): IO[DeepTraceError, List[ApiReport]]
   def getReport(id: String): IO[DeepTraceError, ApiReport]
 }
 
@@ -27,19 +29,23 @@ object ApiService {
 
   def getCluster(id: ApiClusterId): ZIO[ApiService, DeepTraceError, ApiCluster] =
     ZIO.serviceWithZIO[ApiService](_.getCluster(id))
+
   def createReport(request: ApiAnalysisRequest): ZIO[ApiService, DeepTraceError, ApiReport] =
     ZIO.serviceWithZIO[ApiService](_.createReport(request))
-  def listReports(): ZIO[ApiService, ReportNotFound, List[ApiReport]] =
+
+  def listReports(): ZIO[ApiService, DeepTraceError, List[ApiReport]] =
     ZIO.serviceWithZIO[ApiService](_.listReports())
+
   def getReport(id: String): ZIO[ApiService, DeepTraceError, ApiReport] =
     ZIO.serviceWithZIO[ApiService](_.getReport(id))
 
   class Live(
       engine: Engine,
-      reportStore: ReportStore,
+      reportStore: TaskStore,
       clusterStore: ClusterStore,
-      jaegerSource: JaegerSource
-  ) extends ApiService {
+      jaegerSource: JaegerSource)
+    extends ApiService {
+
     override def getCluster(id: ApiClusterId): IO[DeepTraceError, ApiCluster] = {
       clusterStore.get(fromApi(id)).flatMap(toApi)
     }
@@ -73,20 +79,22 @@ object ApiService {
       } yield toApi(result)
     }
 
-    override def listReports(): IO[ReportNotFound, List[ApiReport]] = reportStore.list().map(_.map(toApi))
+    override def listReports(): IO[DeepTraceError, List[ApiReport]] =
+      reportStore.list().map(toApi).runCollect.map(_.toList)
 
-    override def getReport(id: String): IO[ReportNotFound, ApiReport] = reportStore.get(id).map(toApi)
+    override def getReport(id: String): IO[DeepTraceTaskNotFound, ApiReport] =
+      reportStore.get(UUID.fromString(id)).map(toApi)
   }
 
   val live: ZLayer[
-    Engine with ReportStore with ClusterStore with JaegerSource,
+    Engine with TaskStore with ClusterStore with JaegerSource,
     Nothing,
     ApiService
   ] = {
     ZLayer {
       for {
         engine <- ZIO.service[Engine]
-        reportStore <- ZIO.service[ReportStore]
+        reportStore <- ZIO.service[TaskStore]
         clusterStore <- ZIO.service[ClusterStore]
         jaegerSource <- ZIO.service[JaegerSource]
       } yield new Live(engine, reportStore, clusterStore, jaegerSource)

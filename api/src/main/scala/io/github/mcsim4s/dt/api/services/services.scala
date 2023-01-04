@@ -12,7 +12,7 @@ import zio.Console.printLine
 package object services {
   implicit class ApiRequest[R, A](val request: ZIO[R, DeepTraceError, A]) {
     lazy val apiRequest: ZIO[R, Nothing, A] = request.flatMapError {
-      case err: ReportNotFound  => ZIO.die(new IllegalArgumentException(err.message))
+      case err: DeepTraceTaskNotFound  => ZIO.die(new IllegalArgumentException(err.message))
       case err: ClusterNotFound => ZIO.die(new IllegalArgumentException(err.message))
       //      case DeepTraceError.GenericError(message) => ???
       //      case DeepTraceError.RawTraceMappingError(message) => ???

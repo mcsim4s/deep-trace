@@ -1,0 +1,10 @@
+syntax="proto3";
+
+package io.github.mcsim4s.dt.model;
+
+enum DeepTraceTaskStateFilter {
+  NEW = 0;
+  FETCHING = 1;
+  CLUSTERING = 2;
+  CLUSTERS_BUILT = 3;
+}
