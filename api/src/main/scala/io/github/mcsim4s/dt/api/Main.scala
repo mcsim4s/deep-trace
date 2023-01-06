@@ -8,6 +8,7 @@ import io.github.mcsim4s.dt.dao.impl.LiveTaskDao.TaskDaoConf
 import io.github.mcsim4s.dt.engine.live.store.{LiveClusterStore, LiveProcessStore, LiveTaskStore}
 import io.github.mcsim4s.dt.engine.live.{LiveEngine, TraceParserLive}
 import io.github.mcsim4s.dt.engine.source.JaegerSource
+import io.github.mcsim4s.toolkit.app.BaseApplication
 import io.grpc.ManagedChannelBuilder
 import io.jaegertracing.api_v2.query.ZioQuery.QueryServiceClient
 import org.http4s._
@@ -23,10 +24,10 @@ import pureconfig.generic.auto._
 import zio.interop.catz._
 import zio.stream.interop.fs2z._
 
-object Main extends zio.ZIOAppDefault {
-  type Env = ApiService with JaegerService
-  type GQL = GraphQLInterpreter[Env, CalibanError]
-  type ApiTask[+A] = ZIO[Env, Throwable, A]
+object Main extends BaseApplication {
+  override type ApplicationLayer = ApiService with JaegerService
+  type GQL = GraphQLInterpreter[ApplicationLayer, CalibanError]
+  type ApiTask[+A] = ZIO[ApplicationLayer, Throwable, A]
 
   private val serverPort: RuntimeFlags = 8080
 
