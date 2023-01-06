@@ -4,12 +4,10 @@ import caliban.{CalibanError, GraphQLInterpreter, Http4sAdapter}
 import io.github.mcsim4s.dt.api.services.jaeger.JaegerService
 import io.github.mcsim4s.dt.api.services.jaeger.JaegerService.JaegerService
 import io.github.mcsim4s.dt.dao.impl.LiveTaskDao
-import io.github.mcsim4s.dt.dao.impl.LiveTaskDao.TaskDaoConf
 import io.github.mcsim4s.dt.engine.live.store.{LiveClusterStore, LiveProcessStore, LiveTaskStore}
 import io.github.mcsim4s.dt.engine.live.{LiveEngine, TraceParserLive}
 import io.github.mcsim4s.dt.engine.source.JaegerSource
 import io.github.mcsim4s.toolkit.app.BaseApplication
-import io.github.mcsim4s.toolkit.config.Pureconfig
 import io.grpc.ManagedChannelBuilder
 import io.jaegertracing.api_v2.query.ZioQuery.QueryServiceClient
 import org.http4s._
@@ -21,7 +19,6 @@ import org.http4s.server.middleware.CORS
 import scalapb.zio_grpc.ZManagedChannel
 import zio._
 import zio.stream.ZStream
-import pureconfig.generic.auto._
 import zio.interop.catz._
 import zio.stream.interop.fs2z._
 
@@ -68,7 +65,6 @@ object Main extends BaseApplication {
     program
       .provideSome(
         jaegerClient,
-        Pureconfig.loadLayer[TaskDaoConf]("task-dao"),
         LiveTaskDao.layer,
         JaegerSource.layer,
         LiveTaskStore.layer,

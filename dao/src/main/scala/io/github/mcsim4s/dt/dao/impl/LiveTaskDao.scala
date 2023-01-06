@@ -15,9 +15,12 @@ import io.github.mcsim4s.dt.model.DeepTraceError
 import io.github.mcsim4s.dt.model.DeepTraceError.UnexpectedDbError
 import io.github.mcsim4s.dt.model.query.DeepTraceTaskStateFilter
 import io.github.mcsim4s.dt.model.task.{DeepTraceTask, TaskFilter}
+import io.github.mcsim4s.toolkit.config.{JdbcConfig, Pureconfig}
+import io.github.mcsim4s.toolkit.doobie.OpsTransactor
 import zio._
 import zio.interop.catz._
 import zio.stream.interop.fs2z._
+import zio.telemetry.opentelemetry.Tracing
 
 import java.util.UUID
 
@@ -123,36 +126,12 @@ object LiveTaskDao {
     stateEnum.toString()
   }
 
-  case class TaskDaoConf(
-      url: String,
-      user: String,
-      password: String)
-
-  private def transactor(conf: TaskDaoConf): ZIO[Scope, Throwable, Transactor[Task]] = {
+  val layer: ZLayer[Tracing with Scope, Throwable, TaskDao] = ZLayer {
     for {
-      ds <- ZIO
-        .fromAutoCloseable {
-          ZIO.from {
-            import conf._
-            val hikariConfig = new HikariConfig()
-            hikariConfig.setPoolName(s"db-tasks")
-            hikariConfig.setDriverClassName("org.postgresql.Driver")
-            hikariConfig.setJdbcUrl(url)
-            hikariConfig.setReadOnly(false)
-            hikariConfig.setUsername(user)
-            hikariConfig.setPassword(password)
-            new HikariDataSource(hikariConfig)
-          }
-        }
-      ec <- ZIO.blockingExecutor
-    } yield Transactor.fromDataSource.apply(ds, ec.asExecutionContext)
-  }
-
-  val layer: ZLayer[TaskDaoConf with Scope, Throwable, TaskDao] = ZLayer {
-    for {
-      config <- ZIO.service[TaskDaoConf]
-      tx <- transactor(config)
-      dao = LiveTaskDao(tx)
+      config <- Pureconfig.load[JdbcConfig]("tasks-dao")
+      tracing <- ZIO.service[Tracing]
+      transactor <- OpsTransactor.makeTransactor(config, tracing)
+      dao = LiveTaskDao(transactor)
       _ <- dao.init().mapError(_.cause)
     } yield dao
   }

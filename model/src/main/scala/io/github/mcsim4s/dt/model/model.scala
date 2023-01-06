@@ -1,13 +1,16 @@
 package io.github.mcsim4s.dt
 
 import com.google.protobuf.timestamp.Timestamp
+import io.jaegertracing.api_v2.model.Span
 
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
 
 package object model {
+
   implicit class RichMap[K, V](val map: Map[K, V]) {
+
     def putIfAbsent(k: K, v: V): Map[K, V] = {
       if (map.contains(k)) {
         map
@@ -18,6 +21,7 @@ package object model {
   }
 
   implicit class MapCollector[K, V](val map: Map[K, Seq[V]]) {
+
     def append(k: K, v: V): Map[K, Seq[V]] = {
       val withEmpty = map.putIfAbsent(k, Seq.empty)
       withEmpty + ((k, withEmpty(k) :+ v))
@@ -47,6 +51,7 @@ package object model {
   }
 
   implicit class RichInstant(val instant: Instant) {
+
     def minus(other: Instant): Instant = {
       instant.minusSeconds(other.getEpochSecond).minusNanos(other.getNano)
     }
@@ -59,8 +64,13 @@ package object model {
   }
 
   implicit class RichDuration(val duration: com.google.protobuf.duration.Duration) {
+
     def asScala: Duration = {
       Duration(duration.seconds, TimeUnit.SECONDS).plus(Duration(duration.nanos, TimeUnit.NANOSECONDS))
     }
+  }
+
+  implicit class RichJaegerSpan(val span: Span) {
+    lazy val requestId: String = span.traceId.toByteArray.drop(8).map(String.format("%02x", _)).mkString
   }
 }

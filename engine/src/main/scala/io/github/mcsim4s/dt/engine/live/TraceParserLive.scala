@@ -10,17 +10,18 @@ import io.github.mcsim4s.dt.model.Process._
 import io.github.mcsim4s.dt.model._
 import io.jaegertracing.api_v2.model.Span
 import zio.stream._
+import zio.telemetry.opentelemetry.Tracing
 import zio.{IO, Ref, URLayer, ZIO, ZLayer}
 
 import java.time.Instant
 import scala.concurrent.duration._
 
-class TraceParserLive(spanStore: ProcessStore) extends TraceParser {
+class TraceParserLive(tracing: Tracing, spanStore: ProcessStore) extends TraceParser {
+  import tracing._
 
   override def parse(
       rawTrace: RawTrace,
-      operationsName: String
-  ): Stream[DeepTraceError.RawTraceMappingError, TraceParsingState] = {
+      operationsName: String): Stream[DeepTraceError.RawTraceMappingError, TraceParsingState] = {
     def pushRoot(ref: Ref[Seq[Span]], span: Span) =
       ref.update(_ :+ span)
 
@@ -61,14 +62,15 @@ class TraceParserLive(spanStore: ProcessStore) extends TraceParser {
       parsed <- ZIO.foreach(roots)(r => fromSpan(r, parentToChildMap, r.getStartTime.toInstant))
     } yield parsed
 
-    ZStream.fromZIO(parseOne).flatMap(chunk => ZStream.fromIterable(chunk))
+    val traced = span("parse_single_trace")(parseOne)
+
+    ZStream.fromZIO(traced).flatMap(chunk => ZStream.fromIterable(chunk))
   }
 
   def fromSpan(
       span: Span,
       parentToChildMap: ParentToChild,
-      parentStart: Instant
-  ): IO[RawTraceMappingError, TraceParsingState] =
+      parentStart: Instant): IO[RawTraceMappingError, TraceParsingState] =
     for {
       parsedChildren <- ZIO.foreach(parentToChildMap.getOrElse(span.spanId, Seq.empty)) { child =>
         fromSpan(child, parentToChildMap, span.getStartTime.toInstant)
@@ -96,12 +98,11 @@ class TraceParserLive(spanStore: ProcessStore) extends TraceParser {
       childInstances ++ concurrent.map(_.instance) ++ gapsInstances :+ resultInstant,
       current = resultInstant,
       containsErrors = parsedChildren.exists(_.containsErrors),
-      exampleId = span.traceId.toByteArray.drop(8).map(String.format("%02x", _)).mkString
+      exampleId = span.requestId
     )
 
   def reduceConcurrent(
-      processes: Seq[ParsedProcess[ParallelProcess]]
-  ): (Seq[ParsedProcess[ConcurrentProcess]], Seq[ParsedProcess[ParallelProcess]]) = {
+      processes: Seq[ParsedProcess[ParallelProcess]]): (Seq[ParsedProcess[ConcurrentProcess]], Seq[ParsedProcess[ParallelProcess]]) = {
     val grouped = processes.groupBy(_.process.id).values.groupBy(_.size > 1)
 
     val concurrent = grouped.getOrElse(true, Iterable.empty).map { group =>
@@ -127,8 +128,7 @@ class TraceParserLive(spanStore: ProcessStore) extends TraceParser {
   def reduceSequential(
       parent: Span,
       parentDuration: Duration,
-      processes: Seq[ParsedProcess[Process]]
-  ): (Seq[ProcessInstance.Single], Seq[SequentialProcess]) = {
+      processes: Seq[ParsedProcess[Process]]): (Seq[ProcessInstance.Single], Seq[SequentialProcess]) = {
     val pairs = processes.map { curr =>
       val startGap = gap(parent, path = Seq.empty, next = Some(curr.process))
       val startGapInstance = ProcessInstance.Single(startGap.id, start = 0.nanos, duration = curr.instance.start)
@@ -167,7 +167,7 @@ object TraceParserLive {
     builder.append(parent.operationName)
     next match {
       case Some(value) => builder.append(value.id)
-      case None        => builder.append("last")
+      case None => builder.append("last")
     }
     path.foreach(p => builder.append(p.id.hash))
     Gap(ProcessId(MD5.hash(builder.toString())))
@@ -175,9 +175,10 @@ object TraceParserLive {
 
   case class ParsedProcess[+T <: Process](process: T, instance: ProcessInstance)
 
-  val layer: URLayer[ProcessStore, TraceParser] = ZLayer {
+  val layer: URLayer[ProcessStore with Tracing, TraceParser] = ZLayer {
     for {
+      tracing <- ZIO.service[Tracing]
       processStore <- ZIO.service[ProcessStore]
-    } yield new TraceParserLive(processStore)
+    } yield new TraceParserLive(tracing, processStore)
   }
 }

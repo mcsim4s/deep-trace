@@ -14,7 +14,10 @@ val toolkit = (project in file("toolkit"))
     name := "toolkit",
     libraryDependencies ++= Seq(
       library.zio,
+      library.zioInteropCats,
       library.pureConfig,
+      library.doobie,
+      library.hikariCP,
       library.zioTest    % Test,
       library.zioTestSbt % Test
     ) ++ library.logging ++ library.tracing
@@ -61,10 +64,8 @@ val dao = (project in file("dao"))
     libraryDependencies ++= Seq(
       library.zio,
       library.doobie,
-      library.doobiePostgres,
       library.doobiePostgresCirce,
       library.zioInteropCats,
-      library.hikariCP,
       library.clickHouseDriver,
       library.zioTest    % Test,
       library.zioTestSbt % Test
@@ -74,7 +75,7 @@ val dao = (project in file("dao"))
       library.zioStreams
     )
   )
-  .dependsOn(model)
+  .dependsOn(model, toolkit)
 
 val engine = (project in file("engine"))
   .settings(commonSettings)
