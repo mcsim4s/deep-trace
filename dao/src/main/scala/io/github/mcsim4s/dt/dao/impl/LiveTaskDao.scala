@@ -74,7 +74,9 @@ case class LiveTaskDao(xa: Transactor[Task]) extends TaskDao with LogDoobieQueri
   }
 
   private def updateQuery(task: DeepTraceTask): doobie.Update0 = {
-    sql"""UPDATE $TableName SET ($state, $json) = (${task.state}, $task)""".update
+    sql"""UPDATE $TableName
+         SET ($state, $json) = (${task.state}, $task)
+         WHERE $id = ${task.id}""".update
   }
 
   private def init(): ZIO[Any, UnexpectedDbError, Unit] = {

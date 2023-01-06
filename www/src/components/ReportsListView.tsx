@@ -17,38 +17,36 @@ const listReportsQuery = gql`
 `;
 
 type ReportListProps = {
-  whenToRefetch: (refetch: (variables?: Partial<any>) => Promise<ApolloQueryResult<Queries>>) => void ;
+    whenToRefetch: (refetch: (variables?: Partial<any>) => Promise<ApolloQueryResult<Queries>>) => void;
 }
 
 export default function ReportsListView(props: ReportListProps) {
-  let { loading, error, data, refetch } = useQuery<Queries>(
-    listReportsQuery
-  )
+    let {loading, error, data, refetch} = useQuery<Queries>(
+        listReportsQuery
+    )
 
-  props.whenToRefetch(refetch);
+    props.whenToRefetch(refetch);
 
-  if (error) throw error;
-  if (loading) return <Heading>Loading ...</Heading>;
-  if (!data) throw new Error("No Data");
+    if (error) throw error;
+    if (loading) return <Heading>Loading ...</Heading>;
+    if (!data) throw new Error("No Data");
 
-  const reports = data.listReports?.sort((a, b) => {
-    const ad = Date.parse(a.createdAt)
-    const bd = Date.parse(b.createdAt)
-    return bd - ad;
-  })
+    const reports = data.listReports?.sort((a, b) => {
+        const ad = Date.parse(a.createdAt)
+        const bd = Date.parse(b.createdAt)
+        return bd - ad;
+    });
 
-  console.log(reports)
-
-  return <>
-    <Heading size={2}>Existing reports</Heading>
-    <Block>
-      {reports?.map((report) => {
-        const created = new Date(Date.parse(report.createdAt));
-        return <Link to={`/report/${report.id}`} key={report.id} className="box">
-          {report.service} --- {report.operation} --- {created.toLocaleString()} -------- {report.state.__typename}
-        </Link>
-      })}
-    </Block>
-    <br/>
-  </>;
+    return <>
+        <Heading size={2}>Existing reports</Heading>
+        <Block>
+            {reports?.map((report) => {
+                const created = new Date(Date.parse(report.createdAt));
+                return <Link to={`/report/${report.id}`} key={report.id} className="box">
+                    {report.service} --- {report.operation} --- {created.toLocaleString()} -------- {report.state.__typename}
+                </Link>
+            })}
+        </Block>
+        <br/>
+    </>;
 }

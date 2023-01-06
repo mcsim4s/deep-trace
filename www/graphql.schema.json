@@ -371,6 +371,29 @@
       },
       {
         "kind": "OBJECT",
+        "name": "Fetching",
+        "description": null,
+        "fields": [
+          {
+            "name": "_",
+            "description": "Fake field because GraphQL does not support empty objects. Do not query, use __typename instead.",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [],
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "OBJECT",
         "name": "FlatStats",
         "description": null,
         "fields": [
@@ -537,6 +560,29 @@
             "type": {
               "kind": "OBJECT",
               "name": "AnalysisReport",
+              "ofType": null
+            },
+            "isDeprecated": false,
+            "deprecationReason": null
+          }
+        ],
+        "inputFields": null,
+        "interfaces": [],
+        "enumValues": null,
+        "possibleTypes": null
+      },
+      {
+        "kind": "OBJECT",
+        "name": "New",
+        "description": null,
+        "fields": [
+          {
+            "name": "_",
+            "description": "Fake field because GraphQL does not support empty objects. Do not query, use __typename instead.",
+            "args": [],
+            "type": {
+              "kind": "SCALAR",
+              "name": "Boolean",
               "ofType": null
             },
             "isDeprecated": false,
@@ -943,6 +989,16 @@
           {
             "kind": "OBJECT",
             "name": "ClustersBuilt",
+            "ofType": null
+          },
+          {
+            "kind": "OBJECT",
+            "name": "Fetching",
+            "ofType": null
+          },
+          {
+            "kind": "OBJECT",
+            "name": "New",
             "ofType": null
           }
         ]

@@ -60,6 +60,12 @@ export type DurationStats = {
   average: Scalars['Duration'];
 };
 
+export type Fetching = {
+  __typename?: 'Fetching';
+  /** Fake field because GraphQL does not support empty objects. Do not query, use __typename instead. */
+  _?: Maybe<Scalars['Boolean']>;
+};
+
 export type FlatStats = {
   __typename?: 'FlatStats';
   duration: DurationStats;
@@ -90,6 +96,12 @@ export type Mutations = {
 export type MutationsCreateReportArgs = {
   sourceId: Scalars['String'];
   params: TraceQueryInput;
+};
+
+export type New = {
+  __typename?: 'New';
+  /** Fake field because GraphQL does not support empty objects. Do not query, use __typename instead. */
+  _?: Maybe<Scalars['Boolean']>;
 };
 
 export type OperationSuggest = {
@@ -140,7 +152,7 @@ export type SequentialProcess = {
   childrenIds: Array<Scalars['String']>;
 };
 
-export type State = Clustering | ClustersBuilt;
+export type State = Clustering | ClustersBuilt | Fetching | New;
 
 export type SuggestResponse = {
   __typename?: 'SuggestResponse';
