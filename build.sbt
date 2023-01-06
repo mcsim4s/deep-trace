@@ -4,8 +4,6 @@ version := "0.1"
 
 ThisBuild / scalaVersion := "2.13.7"
 
-conflictManager := ConflictManager.strict
-
 // ***************************
 // Projects
 // ***************************
@@ -22,15 +20,17 @@ val toolkit = (project in file("toolkit"))
   )
 
 val jaegerModel = (project in file("jaeger-model"))
+  .settings(commonSettings)
   .settings(
     name := "jaeger-model",
     Compile / PB.targets := Seq(
       scalapb.gen() -> (Compile / sourceManaged).value,
       scalapb.zio_grpc.ZioCodeGenerator -> (Compile / sourceManaged).value
     ),
-    libraryDependencies ++= Seq(
-      library.scalaPbRuntime,
-      library.scalaPbRuntimeGrpc
+    libraryDependencies ++= library.protobuf,
+    dependencyOverrides ++= library.protobufOverrides ++ Seq(
+      library.zio,
+      library.zioStreams
     )
   )
 
@@ -43,9 +43,12 @@ val model = (project in file("model"))
     ),
     libraryDependencies ++= Seq(
       library.openTelemetry,
-      library.zio,
       library.zioTest    % Test,
       library.zioTestSbt % Test
+    ),
+    dependencyOverrides ++= library.protobufOverrides ++ Seq(
+      library.zio,
+      library.zioStreams
     )
   )
   .dependsOn(jaegerModel)
@@ -64,7 +67,11 @@ val dao = (project in file("dao"))
       library.clickHouseDriver,
       library.zioTest    % Test,
       library.zioTestSbt % Test
-    ) ++ library.circe
+    ) ++ library.circe,
+    dependencyOverrides ++= library.protobufOverrides ++ Seq(
+      library.zio,
+      library.zioStreams
+    )
   )
   .dependsOn(model)
 
@@ -123,49 +130,62 @@ lazy val library =
       val circeVersion = "0.14.1"
       val slf4jVersion = "2.0.5"
       val logbackVersion = "1.4.5"
+
+//      protobuf stuff
+      val guavaVersion = "30.1.1-android"
+      val grpcCoreVersion = "1.51.0"
+      val scalaPbCompilerVersion = "0.11.12"
     }
 
     val openTelemetry =
-      "io.opentelemetry"                         % "opentelemetry-api" % Version.openTelemetryVersion
-    val zio = "dev.zio"                         %% "zio"               % Version.zioVersion
-    val zioStreams = "dev.zio"                  %% "zio-streams"       % Version.zioVersion
-    val zioTest = "dev.zio"                     %% "zio-test"          % Version.zioVersion
-    val zioTestSbt = "dev.zio"                  %% "zio-test-sbt"      % Version.zioVersion
-    val grpc = "io.grpc"                         % "grpc-netty"        % Version.grpcVersion
-    val caliban = "com.github.ghostdogpr"       %% "caliban"           % Version.calibanVersion
-    val calibanHttp4s = "com.github.ghostdogpr" %% "caliban-http4s"    % Version.calibanVersion
-
-    val scalaPbRuntime =
-      "com.thesamet.scalapb" %% "scalapb-runtime" % VersionPb.scalapbVersion % "protobuf"
-
-    val scalaPbRuntimeGrpc =
-      "com.thesamet.scalapb"                   %% "scalapb-runtime-grpc"   % VersionPb.scalapbVersion
-    val math = "org.apache.commons"             % "commons-math3"          % Version.math
-    val doobie = "org.tpolecat"                %% "doobie-core"            % Version.doobieVersion
-    val doobiePostgres = "org.tpolecat"        %% "doobie-postgres"        % Version.doobieVersion
-    val doobiePostgresCirce = "org.tpolecat"   %% "doobie-postgres-circe"  % Version.doobieVersion
-    val zioInteropCats = "dev.zio"             %% "zio-interop-cats"       % Version.zioCatsInteropVersion
-    val pureConfig = "com.github.pureconfig"   %% "pureconfig"             % Version.pureConfigVersion
-    val clickHouseDriver = "com.clickhouse"     % "clickhouse-jdbc"        % Version.clickhouseVersion
-    val clickHouseHttpClient = "com.clickhouse" % "clickhouse-http-client" % Version.clickhouseVersion
-    val clickHouseClient = "com.clickhouse"     % "clickhouse-client"      % Version.clickhouseVersion
-    val hikariCP = "com.zaxxer"                 % "HikariCP"               % Version.hikariCpVersion
-    val http4sDsl = "org.http4s"               %% "http4s-dsl"             % Version.http4sVersion
-    val http4sServer = "org.http4s"            %% "http4s-blaze-server"    % Version.blazeVersion
+      "io.opentelemetry"                         % "opentelemetry-api"      % Version.openTelemetryVersion
+    val zio = "dev.zio"                         %% "zio"                    % Version.zioVersion
+    val zioStreams = "dev.zio"                  %% "zio-streams"            % Version.zioVersion
+    val zioTest = "dev.zio"                     %% "zio-test"               % Version.zioVersion
+    val zioTestSbt = "dev.zio"                  %% "zio-test-sbt"           % Version.zioVersion
+    val grpc = "io.grpc"                         % "grpc-netty"             % Version.grpcVersion
+    val caliban = "com.github.ghostdogpr"       %% "caliban"                % Version.calibanVersion
+    val calibanHttp4s = "com.github.ghostdogpr" %% "caliban-http4s"         % Version.calibanVersion
+    val math = "org.apache.commons"              % "commons-math3"          % Version.math
+    val doobie = "org.tpolecat"                 %% "doobie-core"            % Version.doobieVersion
+    val doobiePostgres = "org.tpolecat"         %% "doobie-postgres"        % Version.doobieVersion
+    val doobiePostgresCirce = "org.tpolecat"    %% "doobie-postgres-circe"  % Version.doobieVersion
+    val zioInteropCats = "dev.zio"              %% "zio-interop-cats"       % Version.zioCatsInteropVersion
+    val pureConfig = "com.github.pureconfig"    %% "pureconfig"             % Version.pureConfigVersion
+    val clickHouseDriver = "com.clickhouse"      % "clickhouse-jdbc"        % Version.clickhouseVersion
+    val clickHouseHttpClient = "com.clickhouse"  % "clickhouse-http-client" % Version.clickhouseVersion
+    val clickHouseClient = "com.clickhouse"      % "clickhouse-client"      % Version.clickhouseVersion
+    val hikariCP = "com.zaxxer"                  % "HikariCP"               % Version.hikariCpVersion
+    val http4sDsl = "org.http4s"                %% "http4s-dsl"             % Version.http4sVersion
+    val http4sServer = "org.http4s"             %% "http4s-blaze-server"    % Version.blazeVersion
 
     val circe = Seq(
       "io.circe" %% "circe-core",
-      "io.circe" %% "circe-generic",
-      "io.circe" %% "circe-parser"
-    ).map(_ % Version.circeVersion)
+      "io.circe" %% "circe-generic"
+    ).map(_ % Version.circeVersion).map(_.exclude("org.typelevel", "cats-core_2.13"))
 
     val logging = Seq(
-      "org.slf4j"      % "slf4j-api"         % Version.slf4jVersion,
-      "dev.zio"       %% "zio-logging"       % Version.zioLoggingVersion,
-      "dev.zio"       %% "zio-logging-slf4j" % Version.zioLoggingVersion,
-      "ch.qos.logback" % "logback-classic"   % Version.logbackVersion
+      "org.slf4j"       % "slf4j-api"         % Version.slf4jVersion,
+      "dev.zio"        %% "zio-logging"       % Version.zioLoggingVersion,
+      ("dev.zio"       %% "zio-logging-slf4j" % Version.zioLoggingVersion).exclude("org.slf4j", "slf4j-api"),
+      ("ch.qos.logback" % "logback-classic"   % Version.logbackVersion).exclude("org.slf4j", "slf4j-api")
     )
 
+    val protobufOverrides = Seq(
+      "com.google.guava"      % "guava"                   % Version.guavaVersion,
+      "io.grpc"               % "grpc-core"               % Version.grpcCoreVersion,
+      "io.grpc"               % "grpc-api"                % Version.grpcCoreVersion,
+      "io.grpc"               % "grpc-stub"               % Version.grpcCoreVersion,
+      "io.grpc"               % "grpc-protobuf"           % Version.grpcCoreVersion,
+      "com.google.errorprone" % "error_prone_annotations" % "2.17.0",
+      "com.google.protobuf"   % "protobuf-java"           % "3.21.12",
+      "com.google.code.gson"  % "gson"                    % "2.10"
+    ).map(_.force())
+
+    val protobuf = Seq(
+      "com.thesamet.scalapb" %% "scalapb-runtime-grpc" % VersionPb.scalapbVersion,
+      "com.thesamet.scalapb" %% "scalapb-runtime"      % VersionPb.scalapbVersion % "protobuf"
+    )
   }
 
 // ***************************
