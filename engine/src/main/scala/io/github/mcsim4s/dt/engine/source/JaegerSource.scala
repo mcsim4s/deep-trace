@@ -10,22 +10,20 @@ import zio.Clock
 import zio.stream.ZStream
 
 class JaegerSource(jaegerClient: QueryServiceClient.Service) {
+
   def createSource(query: TraceQueryParameters): IO[DeepTraceError, RawTraceSource] =
     ZIO.succeed {
-      val stream: ZStream[Any, io.grpc.Status, SpansResponseChunk] =
-        jaegerClient.findTraces(FindTracesRequest(query = Some(query)))
-      stream.mapBoth(
-        status => {
-          TraceRetrieveError(s"Jaeger trace stream failed with $status")
-        },
-        chunk => {
-          RawTrace(chunk.spans)
-        }
-      )
+      jaegerClient
+        .findTraces(FindTracesRequest(query = Some(query)))
+        .mapError(status => TraceRetrieveError(s"Jaeger trace stream failed with $status"))
+        .mapConcat(_.spans)
+        .groupAdjacentBy(_.traceId)
+        .map { case (_, chunk) => RawTrace.apply(chunk.toSeq) }
     }
 }
 
 object JaegerSource {
+
   val makeService: ZIO[QueryServiceClient, Nothing, JaegerSource] = for {
     client <- ZIO.service[QueryServiceClient.Service]
   } yield new JaegerSource(client)
