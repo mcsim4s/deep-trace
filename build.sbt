@@ -4,9 +4,22 @@ version := "0.1"
 
 ThisBuild / scalaVersion := "2.13.7"
 
+conflictManager := ConflictManager.strict
+
 // ***************************
 // Projects
 // ***************************
+
+val toolkit = (project in file("toolkit"))
+  .settings(commonSettings)
+  .settings(
+    name := "toolkit",
+    libraryDependencies ++= Seq(
+      library.zio,
+      library.zioTest    % Test,
+      library.zioTestSbt % Test
+    ) ++ library.logging
+  )
 
 val jaegerModel = (project in file("jaeger-model"))
   .settings(
@@ -79,13 +92,10 @@ val api = (project in file("api"))
       library.http4sServer,
       library.pureConfig,
       library.caliban,
-      library.slf4jApi,
-      library.julToSlf4j,
-      library.logback,
       library.calibanHttp4s
     )
   )
-  .dependsOn(engine)
+  .dependsOn(toolkit, engine)
 
 // ***************************
 // Dependencies
@@ -99,6 +109,7 @@ lazy val library =
     object Version {
       val openTelemetryVersion = "1.21.0"
       val zioVersion = "2.0.5"
+      val zioLoggingVersion = "2.1.7"
       val grpcVersion = "1.51.0"
       val calibanVersion = "2.0.2"
       val math = "3.6.1"
@@ -141,15 +152,19 @@ lazy val library =
     val hikariCP = "com.zaxxer"                 % "HikariCP"               % Version.hikariCpVersion
     val http4sDsl = "org.http4s"               %% "http4s-dsl"             % Version.http4sVersion
     val http4sServer = "org.http4s"            %% "http4s-blaze-server"    % Version.blazeVersion
-    val slf4jApi = "org.slf4j"                  % "slf4j-api"              % Version.slf4jVersion
-    val julToSlf4j = "org.slf4j"                % "jul-to-slf4j"           % Version.slf4jVersion
-    val logback = "ch.qos.logback"              % "logback-classic"        % Version.logbackVersion
 
     val circe = Seq(
       "io.circe" %% "circe-core",
       "io.circe" %% "circe-generic",
       "io.circe" %% "circe-parser"
     ).map(_ % Version.circeVersion)
+
+    val logging = Seq(
+      "org.slf4j"      % "slf4j-api"         % Version.slf4jVersion,
+      "dev.zio"       %% "zio-logging"       % Version.zioLoggingVersion,
+      "dev.zio"       %% "zio-logging-slf4j" % Version.zioLoggingVersion,
+      "ch.qos.logback" % "logback-classic"   % Version.logbackVersion
+    )
 
   }
 
