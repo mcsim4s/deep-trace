@@ -37,7 +37,8 @@ const getSuggestQuery = gql`
         operations {
           name,
           kind
-        }
+        },
+        forService
       }
     }
 `;
@@ -59,7 +60,7 @@ export default function ReportCreateForm(props: AddReportFormProps) {
     const services: string[] = data?.suggest.services || ["loading..."];
     const operations: string[] = data?.suggest.operations.map(o => o.name) || ["loading..."];
 
-    initialValues.serviceName = services[0];
+    initialValues.serviceName = data?.suggest?.forService || services[0];
     initialValues.operationName = operations[0];
     return <Box className="is-primary">
         <Heading size={4} spaced={true}>Create new report</Heading>
@@ -67,13 +68,6 @@ export default function ReportCreateForm(props: AddReportFormProps) {
         <Formik initialValues={initialValues} onSubmit={(values, actions) => {
             actions.setSubmitting(false)
             const nowMillis = Math.floor(Date.now() / 1000);
-            console.log({
-                serviceName: values.serviceName,
-                operationName: values.operationName,
-                tags: Array.of<string>(...(values.tags?.split(' ') || [])),
-                startTimeMinSeconds: nowMillis - 60 * 60,
-                startTimeMaxSeconds: nowMillis
-            });
             send({
                     variables: {
                         sourceId: "nevermind",
@@ -92,14 +86,14 @@ export default function ReportCreateForm(props: AddReportFormProps) {
                 <BulmaForm.Field>
                     <BulmaForm.Label>Service name</BulmaForm.Label>
                     <BulmaForm.Control>
-                        <Field name="serviceName" value={initialValues.serviceName}>
+                        <Field name="serviceName">
                             {(props: FieldProps) => {
-                                return <BulmaForm.Select onChange={(event) => {
+                                return <BulmaForm.Select id="serviceName" onChange={(event) => {
                                     props.field.onChange(event);
                                     refetch({
                                         serviceName: event.currentTarget.value
                                     });
-                                }} value={services[0]}>
+                                }}>
                                     {services.map(service => {
                                         return <option key={`${service}-option`} value={service}>{service}</option>
                                     })}

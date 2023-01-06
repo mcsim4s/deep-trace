@@ -158,6 +158,7 @@ export type SuggestResponse = {
   __typename?: 'SuggestResponse';
   services: Array<Scalars['String']>;
   operations: Array<OperationSuggest>;
+  forService?: Maybe<Scalars['String']>;
 };
 
 export type TraceCluster = {

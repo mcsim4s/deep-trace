@@ -9,6 +9,7 @@ import io.github.mcsim4s.dt.engine.live.store.{LiveClusterStore, LiveProcessStor
 import io.github.mcsim4s.dt.engine.live.{LiveEngine, TraceParserLive}
 import io.github.mcsim4s.dt.engine.source.JaegerSource
 import io.github.mcsim4s.toolkit.app.BaseApplication
+import io.github.mcsim4s.toolkit.config.Pureconfig
 import io.grpc.ManagedChannelBuilder
 import io.jaegertracing.api_v2.query.ZioQuery.QueryServiceClient
 import org.http4s._
@@ -25,7 +26,7 @@ import zio.interop.catz._
 import zio.stream.interop.fs2z._
 
 object Main extends BaseApplication {
-  override type ApplicationLayer = ApiService with JaegerService
+  override type ApplicationLayer = Environment with ApiService with JaegerService
   type GQL = GraphQLInterpreter[ApplicationLayer, CalibanError]
   type ApiTask[+A] = ZIO[ApplicationLayer, Throwable, A]
 
@@ -54,7 +55,7 @@ object Main extends BaseApplication {
     "/" -> staticRoutes
   ).orNotFound
 
-  override def run: RIO[ZIOAppArgs with Scope, Any] = {
+  override def run: RIO[Environment with ZIOAppArgs with Scope, Any] = {
     val program = ZIO.service[GQL].flatMap { api =>
       BlazeServerBuilder[ApiTask]
         .bindLocal(serverPort)
@@ -67,7 +68,7 @@ object Main extends BaseApplication {
     program
       .provideSome(
         jaegerClient,
-        Pureconfig.load[TaskDaoConf]("task-dao"),
+        Pureconfig.loadLayer[TaskDaoConf]("task-dao"),
         LiveTaskDao.layer,
         JaegerSource.layer,
         LiveTaskStore.layer,

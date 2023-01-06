@@ -14,9 +14,10 @@ val toolkit = (project in file("toolkit"))
     name := "toolkit",
     libraryDependencies ++= Seq(
       library.zio,
+      library.pureConfig,
       library.zioTest    % Test,
       library.zioTestSbt % Test
-    ) ++ library.logging
+    ) ++ library.logging ++ library.tracing
   )
 
 val jaegerModel = (project in file("jaeger-model"))
@@ -97,7 +98,6 @@ val api = (project in file("api"))
       library.grpc,
       library.http4sDsl,
       library.http4sServer,
-      library.pureConfig,
       library.caliban,
       library.calibanHttp4s
     )
@@ -117,6 +117,8 @@ lazy val library =
       val openTelemetryVersion = "1.21.0"
       val zioVersion = "2.0.5"
       val zioLoggingVersion = "2.1.7"
+      val zioTracingVersion = "3.0.0-RC1"
+      val opentelemetryVersion = "1.21.0"
       val grpcVersion = "1.51.0"
       val calibanVersion = "2.0.2"
       val math = "3.6.1"
@@ -169,6 +171,12 @@ lazy val library =
       "dev.zio"        %% "zio-logging"       % Version.zioLoggingVersion,
       ("dev.zio"       %% "zio-logging-slf4j" % Version.zioLoggingVersion).exclude("org.slf4j", "slf4j-api"),
       ("ch.qos.logback" % "logback-classic"   % Version.logbackVersion).exclude("org.slf4j", "slf4j-api")
+    )
+
+    val tracing = Seq(
+      "dev.zio"         %% "zio-opentelemetry"             % Version.zioTracingVersion,
+      "io.opentelemetry" % "opentelemetry-exporter-jaeger" % Version.opentelemetryVersion,
+      "io.opentelemetry" % "opentelemetry-sdk"             % Version.opentelemetryVersion
     )
 
     val protobufOverrides = Seq(

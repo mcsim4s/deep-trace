@@ -15,6 +15,7 @@ object JaegerService {
   }
 
   case class Live(jaegerClient: QueryServiceClient.Service) extends Service {
+
     def suggest(request: SuggestRequest): IO[DeepTraceError, SuggestResponse] =
       for {
         services <-
@@ -31,7 +32,8 @@ object JaegerService {
 
       } yield SuggestResponse(
         services = services,
-        operations = operations.map(OperationSuggest.apply)
+        operations = operations.map(OperationSuggest.apply),
+        forService = request.serviceName
       )
   }
 
@@ -42,8 +44,7 @@ object JaegerService {
   }
 
   case class Queries(
-      suggest: SuggestRequest => URIO[JaegerService, SuggestResponse]
-  )
+      suggest: SuggestRequest => URIO[JaegerService, SuggestResponse])
 
   implicit val suggestReqSchema: Schema[Any, SuggestRequest] = Schema.genMacro[SuggestRequest].schema
   implicit val suggestRespSchema: Schema[Any, SuggestResponse] = Schema.genMacro[SuggestResponse].schema
