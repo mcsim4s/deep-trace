@@ -1,13 +1,16 @@
 package io.github.mcsim4s.dt
 
 import com.google.protobuf.timestamp.Timestamp
+import io.github.mcsim4s.dt.model.DeepTraceError.TraceRetrieveError
 import io.jaegertracing.api_v2.model.Span
+import zio.stream.ZStream
 
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
 
 package object model {
+  type RawTraceSource = ZStream[Any, TraceRetrieveError, RawTrace]
 
   implicit class RichMap[K, V](val map: Map[K, V]) {
 

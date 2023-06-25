@@ -3,8 +3,9 @@ package io.github.mcsim4s.dt.api
 import caliban.{CalibanError, GraphQLInterpreter, Http4sAdapter}
 import io.github.mcsim4s.dt.api.services.jaeger.JaegerService
 import io.github.mcsim4s.dt.api.services.jaeger.JaegerService.JaegerService
-import io.github.mcsim4s.dt.dao.impl.LiveTaskDao
-import io.github.mcsim4s.dt.engine.live.store.{LiveClusterStore, LiveProcessStore, LiveTaskStore}
+import io.github.mcsim4s.dt.dao.impl.LiveReportDao
+import io.github.mcsim4s.dt.engine.Engine
+import io.github.mcsim4s.dt.engine.live.store.{LiveClusterStore, LiveProcessStore, LiveReportStore}
 import io.github.mcsim4s.dt.engine.live.{LiveEngine, TraceParserLive}
 import io.github.mcsim4s.dt.engine.source.JaegerSource
 import io.github.mcsim4s.toolkit.app.BaseApplication
@@ -47,27 +48,32 @@ object Main extends BaseApplication {
         )
     }
 
-  private def httpApp(api: GQL): HttpApp[ApiTask] = Router[ApiTask](
-    "/graphql" -> CORS.policy(Http4sAdapter.makeHttpService(api)),
-    "/" -> staticRoutes
-  ).orNotFound
+  private def httpApp(api: GQL): HttpApp[ApiTask] =
+    Router[ApiTask](
+      "/graphql" -> CORS.policy(Http4sAdapter.makeHttpService(api)),
+      "/" -> staticRoutes
+    ).orNotFound
+
+  private val startGraphQLServer = ZIO.service[GQL].flatMap { api =>
+    BlazeServerBuilder[ApiTask]
+      .bindLocal(serverPort)
+      .withHttpApp(httpApp(api))
+      .withoutSsl
+      .serve
+      .compile
+      .drain
+  }
 
   override def run: RIO[Environment with ZIOAppArgs with Scope, Any] = {
-    val program = ZIO.service[GQL].flatMap { api =>
-      BlazeServerBuilder[ApiTask]
-        .bindLocal(serverPort)
-        .withHttpApp(httpApp(api))
-        .withoutSsl
-        .serve
-        .compile
-        .drain
-    }
+    val program = startGraphQLServer <&> ZIO
+      .serviceWithZIO[Engine](_.start)
+      .orDieWith(err => new IllegalStateException(err.message))
     program
-      .provideSome(
+      .provideSome[Environment](
         jaegerClient,
-        LiveTaskDao.layer,
+        LiveReportDao.layer,
         JaegerSource.layer,
-        LiveTaskStore.layer,
+        LiveReportStore.layer,
         LiveClusterStore.layer,
         LiveProcessStore.layer,
         TraceParserLive.layer,

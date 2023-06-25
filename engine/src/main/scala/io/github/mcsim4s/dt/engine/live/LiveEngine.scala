@@ -1,13 +1,15 @@
 package io.github.mcsim4s.dt.engine.live
 
+import io.github.mcsim4s.dt.engine.source.JaegerSource
+import io.github.mcsim4s.dt.engine.store.{ClusterStore, ProcessStore, ReportStore}
 import io.github.mcsim4s.dt.engine.{Engine, TraceParser}
-import io.github.mcsim4s.dt.engine.store.{ClusterStore, ProcessStore, TaskStore}
 import io.github.mcsim4s.dt.model.Process.ProcessId
 import io.github.mcsim4s.dt.model.ProcessStats.DurationStats
 import io.github.mcsim4s.dt.model.TraceCluster.ClusterId
 import io.github.mcsim4s.dt.model._
-import io.github.mcsim4s.dt.model.task.DeepTraceTask
-import io.github.mcsim4s.dt.model.task.DeepTraceTask._
+import io.github.mcsim4s.dt.model.query.ReportStateName
+import io.github.mcsim4s.dt.model.report.Report._
+import io.github.mcsim4s.dt.model.report.{Report, ReportFilter}
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics
 import zio.telemetry.opentelemetry.Tracing
 import zio.{Console, _}
@@ -16,38 +18,44 @@ import scala.concurrent.duration.Duration
 
 class LiveEngine(
     tracing: Tracing,
-    reportStore: TaskStore,
+    jaegerSource: JaegerSource,
+    reportStore: ReportStore,
     clusterStore: ClusterStore,
     traceParser: TraceParser,
-    processStore: ProcessStore)
-  extends Engine {
+    processStore: ProcessStore
+) extends Engine {
   import tracing._
 
-  override def process(request: AnalysisRequest): IO[DeepTraceError, DeepTraceTask] = {
-    for {
-      report <- reportStore.create(request)
-      _ <- span("process_task") {
-        span("parse_raw_traces")(parseTraces(report, request))
-          .flatMap { clusters =>
-            span("process_clusters") {
-              ZIO.foreachDiscard(clusters)(processCluster) *>
-                reportStore.update(report.id) { _ =>
-                  ZIO.succeed(report.copy(state = ClustersBuilt(clusters.map(_.id))))
-                }
-            }
-          }
+  override def createReport(request: AnalysisRequest): IO[DeepTraceError, Report] = reportStore.create(request)
+
+  override def start: ZIO[Any, DeepTraceError, Any] =
+    reportStore
+      .list(ReportFilter(state = Set(ReportStateName.NEW)))
+      .foreach { report =>
+        span("process_report")(processReport(report))
           .tapBoth(
             err => Console.printLineError(s"Async clustering error. Err: $err").ignore,
             _ => Console.printLine("Async clustering complete").ignore
           )
-      }.forkDaemon
-    } yield report
-  }
+      }
+      .repeat(Schedule.spaced(1.second))
 
-  private def parseTraces(report: DeepTraceTask, request: AnalysisRequest): IO[DeepTraceError, Seq[TraceCluster]] =
-    request.traceSource
+  private def processReport(report: Report): ZIO[Any, DeepTraceError, Unit] =
+    for {
+      source <- jaegerSource.createSource(report.query)
+      clusters <- span("parse_raw_traces")(parseTraces(report, source))
+      _ <- span("process_clusters") {
+        ZIO.foreachDiscard(clusters)(processCluster) *>
+          reportStore.update(report.id) { _ =>
+            ZIO.succeed(report.copy(state = ClustersBuilt(clusters.map(_.id))))
+          }
+      }
+    } yield ()
+
+  private def parseTraces(report: Report, traceSource: RawTraceSource): IO[DeepTraceError, Seq[TraceCluster]] =
+    traceSource
       .tap(trace => Console.printLine(s"Parsing another trace with ${trace.spans.size} spans").ignore)
-      .flatMap(trace => traceParser.parse(trace, request.operation))
+      .flatMap(trace => traceParser.parse(trace, report.query.operationName))
       .foreach(root => {
         clusterStore
           .getOrCreate(report.id, root)
@@ -60,18 +68,19 @@ class LiveEngine(
         .runCollect
         .map(_.toList)
 
-  private def processCluster(cluster: TraceCluster): IO[DeepTraceError, TraceCluster] = span("single_cluster_process") {
-    setAttribute("cluster.id", cluster.id.toString) *>
-      clusterStore
-        .update(cluster.id) { old =>
-          computeStats(old)
-            .map { stats =>
-              old.copy(stats = Some(stats))
-            }
-        }
-  }
+  private def processCluster(cluster: TraceCluster): IO[DeepTraceError, TraceCluster] =
+    span("single_cluster_process") {
+      setAttribute("cluster.id", cluster.id.toString) *>
+        clusterStore
+          .update(cluster.id) { old =>
+            computeStats(old)
+              .map { stats =>
+                old.copy(stats = Some(stats))
+              }
+          }
+    }
 
-  def computeStats(cluster: TraceCluster): IO[DeepTraceError, ClusterStats] =
+  private def computeStats(cluster: TraceCluster): IO[DeepTraceError, ClusterStats] =
     for {
       processesStats <- processesStatsRecursive(cluster.id)(cluster.root)
       rootSpans <- processStore.list(cluster.id, cluster.root.id)
@@ -80,16 +89,16 @@ class LiveEngine(
       processes = processesStats
     )
 
-  def processesStatsRecursive(
+  private def processesStatsRecursive(
       clusterId: ClusterId
-    )(process: Process): IO[DeepTraceError, Map[ProcessId, ProcessStats]] =
+  )(process: Process): IO[DeepTraceError, Map[ProcessId, ProcessStats]] =
     for {
       currentStats <- singleProcessStats(clusterId)(process)
       subProcesses = process match {
-        case Process.SequentialProcess(children) => children
+        case Process.SequentialProcess(children)     => children
         case Process.ParallelProcess(_, _, children) => children
-        case Process.ConcurrentProcess(of) => Seq(of)
-        case Process.Gap(_) => Seq.empty
+        case Process.ConcurrentProcess(of)           => Seq(of)
+        case Process.Gap(_)                          => Seq.empty
       }
       children <-
         if (subProcesses.nonEmpty) {
@@ -99,7 +108,7 @@ class LiveEngine(
         } else ZIO.succeed(Map.empty)
     } yield Map(process.id -> currentStats) ++ children
 
-  def singleProcessStats(clusterId: ClusterId)(process: Process): IO[DeepTraceError, ProcessStats] =
+  private def singleProcessStats(clusterId: ClusterId)(process: Process): IO[DeepTraceError, ProcessStats] =
     for {
       spans <- processStore.list(clusterId, process.id)
       duration <- ZIO.succeed {
@@ -126,22 +135,22 @@ class LiveEngine(
 }
 
 object LiveEngine {
-
   def makeService: ZIO[
-    TaskStore with ClusterStore with TraceParser with ProcessStore with Tracing,
+    ReportStore with ClusterStore with TraceParser with ProcessStore with Tracing with JaegerSource,
     Nothing,
     LiveEngine
   ] =
     for {
       tracing <- ZIO.service[Tracing]
-      reportStore <- ZIO.service[TaskStore]
+      reportStore <- ZIO.service[ReportStore]
       clusterStore <- ZIO.service[ClusterStore]
       traceParser <- ZIO.service[TraceParser]
       spanStore <- ZIO.service[ProcessStore]
-    } yield new LiveEngine(tracing, reportStore, clusterStore, traceParser, spanStore)
+      jaeger <- ZIO.service[JaegerSource]
+    } yield new LiveEngine(tracing, jaeger, reportStore, clusterStore, traceParser, spanStore)
 
   val layer: ZLayer[
-    TaskStore with ClusterStore with TraceParser with ProcessStore with Tracing,
+    ReportStore with ClusterStore with TraceParser with ProcessStore with Tracing with JaegerSource,
     Nothing,
     Engine
   ] = ZLayer.fromZIO(makeService)

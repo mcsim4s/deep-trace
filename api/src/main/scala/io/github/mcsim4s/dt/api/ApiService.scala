@@ -10,7 +10,7 @@ import io.github.mcsim4s.dt.api.model.{
 }
 import io.github.mcsim4s.dt.engine.Engine
 import io.github.mcsim4s.dt.engine.source.JaegerSource
-import io.github.mcsim4s.dt.engine.store.{ClusterStore, TaskStore}
+import io.github.mcsim4s.dt.engine.store.{ClusterStore, ReportStore}
 import io.github.mcsim4s.dt.model.DeepTraceError.DeepTraceTaskNotFound
 import io.github.mcsim4s.dt.model.{AnalysisRequest, DeepTraceError}
 import io.jaegertracing.api_v2.query.TraceQueryParameters
@@ -39,12 +39,7 @@ object ApiService {
   def getReport(id: String): ZIO[ApiService, DeepTraceError, ApiReport] =
     ZIO.serviceWithZIO[ApiService](_.getReport(id))
 
-  class Live(
-      engine: Engine,
-      reportStore: TaskStore,
-      clusterStore: ClusterStore,
-      jaegerSource: JaegerSource)
-    extends ApiService {
+  class Live(engine: Engine, reportStore: ReportStore, clusterStore: ClusterStore) extends ApiService {
 
     override def getCluster(id: ApiClusterId): IO[DeepTraceError, ApiCluster] = {
       clusterStore.get(fromApi(id)).flatMap(toApi)
@@ -58,22 +53,19 @@ object ApiService {
 
     override def createReport(request: ApiAnalysisRequest): IO[DeepTraceError, ApiReport] = {
       for {
-        source <- jaegerSource.createSource(
-          TraceQueryParameters(
-            serviceName = request.params.serviceName,
-            operationName = request.params.operationName,
-            tags = request.params.tags.map(pair => pair.split(",").head -> pair.split(",").last).toMap,
-            startTimeMax = request.params.startTimeMaxSeconds.map(sec => Timestamp.of(sec, 0)),
-            startTimeMin = request.params.startTimeMinSeconds.map(sec => Timestamp.of(sec, 0)),
-            durationMax = request.params.durationMaxMillis.map(fromMillis),
-            durationMin = request.params.durationMinMillis.map(fromMillis)
-          )
-        )
-        result <- engine.process(
+        result <- engine.createReport(
           AnalysisRequest(
             service = request.params.serviceName,
             operation = request.params.operationName,
-            traceSource = source
+            query = TraceQueryParameters(
+              serviceName = request.params.serviceName,
+              operationName = request.params.operationName,
+              tags = request.params.tags.map(pair => pair.split(",").head -> pair.split(",").last).toMap,
+              startTimeMax = request.params.startTimeMaxSeconds.map(sec => Timestamp.of(sec, 0)),
+              startTimeMin = request.params.startTimeMinSeconds.map(sec => Timestamp.of(sec, 0)),
+              durationMax = request.params.durationMaxMillis.map(fromMillis),
+              durationMin = request.params.durationMinMillis.map(fromMillis)
+            )
           )
         )
       } yield toApi(result)
@@ -87,17 +79,16 @@ object ApiService {
   }
 
   val live: ZLayer[
-    Engine with TaskStore with ClusterStore with JaegerSource,
+    Engine with ReportStore with ClusterStore with JaegerSource,
     Nothing,
     ApiService
   ] = {
     ZLayer {
       for {
         engine <- ZIO.service[Engine]
-        reportStore <- ZIO.service[TaskStore]
+        reportStore <- ZIO.service[ReportStore]
         clusterStore <- ZIO.service[ClusterStore]
-        jaegerSource <- ZIO.service[JaegerSource]
-      } yield new Live(engine, reportStore, clusterStore, jaegerSource)
+      } yield new Live(engine, reportStore, clusterStore)
     }
   }
 }

@@ -1,7 +1,7 @@
 package io.github.mcsim4s.dt.api
 
-import io.github.mcsim4s.dt.model.task._
-import io.github.mcsim4s.dt.model.task.DeepTraceTask._
+import io.github.mcsim4s.dt.model.report._
+import io.github.mcsim4s.dt.model.report.Report._
 import io.github.mcsim4s.dt.model._
 import io.github.mcsim4s.dt.api.model.{
   AnalysisReport => ApiReport,
@@ -19,27 +19,24 @@ import java.util.UUID
 package object mappers {
   def toApi(id: ClusterId): ApiClusterId = ApiClusterId(id.taskId.toString, id.rootHash)
 
-  def toApi(report: DeepTraceTask): ApiReport =
+  def toApi(report: Report): ApiReport =
     ApiReport(
       id = report.id.toString,
       createdAt = report.createdAt,
-      service = report.service,
-      operation = report.operation,
+      service = report.query.serviceName,
+      operation = report.query.operationName,
       state = toApi(report.state)
     )
 
-  def toApi(state: DeepTraceTask.State): ApiReport.State =
+  def toApi(state: Report.State): ApiReport.State =
     state match {
-      case New => ApiReport.New
-      case Fetching() => ApiReport.Fetching
-      case Clustering => ApiReport.Clustering
+      case New                       => ApiReport.New
+      case Fetching()                => ApiReport.Fetching
+      case Clustering                => ApiReport.Clustering
       case ClustersBuilt(clusterIds) => ApiReport.ClustersBuilt(clusterIds.map(toApi))
     }
 
-  def toApi(
-      process: Process.ParallelProcess,
-      stats: ClusterStats,
-      isRoot: Boolean = false): Map[String, ApiProcess] = {
+  def toApi(process: Process.ParallelProcess, stats: ClusterStats, isRoot: Boolean = false): Map[String, ApiProcess] = {
     val current = ApiProcess.ParallelProcess(
       id = process.id.hash,
       isRoot = isRoot,
@@ -48,26 +45,24 @@ package object mappers {
       childrenIds = process.children.map(_.id.hash),
       stats = stats.processes(process.id).asFlat
     )
-    process.children.foldLeft(Map[String, ApiProcess](current.id -> current)) { case (acc, child) =>
-      acc ++ toApi(child, stats)
+    process.children.foldLeft(Map[String, ApiProcess](current.id -> current)) {
+      case (acc, child) =>
+        acc ++ toApi(child, stats)
     }
   }
 
-  def toApi(
-      process: Process.SequentialProcess,
-      stats: ClusterStats): Map[String, ApiProcess] = {
+  def toApi(process: Process.SequentialProcess, stats: ClusterStats): Map[String, ApiProcess] = {
     val current = ApiProcess.SequentialProcess(
       id = process.id.hash,
       childrenIds = process.children.map(_.id.hash)
     )
-    process.children.foldLeft(Map[String, ApiProcess](current.id -> current)) { case (acc, child) =>
-      acc ++ toApiProcessGeneral(child, stats)
+    process.children.foldLeft(Map[String, ApiProcess](current.id -> current)) {
+      case (acc, child) =>
+        acc ++ toApiProcessGeneral(child, stats)
     }
   }
 
-  def toApi(
-      process: Process.ConcurrentProcess,
-      stats: ClusterStats): Map[String, ApiProcess] = {
+  def toApi(process: Process.ConcurrentProcess, stats: ClusterStats): Map[String, ApiProcess] = {
     val current = ApiProcess.ConcurrentProcess(
       id = process.id.hash,
       ofId = process.of.id.hash,
@@ -78,9 +73,7 @@ package object mappers {
     ) ++ toApi(process.of, stats)
   }
 
-  def toApi(
-      process: Process.Gap,
-      stats: ClusterStats): Map[String, ApiProcess] = {
+  def toApi(process: Process.Gap, stats: ClusterStats): Map[String, ApiProcess] = {
     val current = ApiProcess.Gap(
       id = process.id.hash,
       stats = stats.processes(process.id).asFlat
@@ -90,14 +83,12 @@ package object mappers {
     )
   }
 
-  def toApiProcessGeneral(
-      process: Process,
-      stats: ClusterStats): Map[String, ApiProcess] = {
+  def toApiProcessGeneral(process: Process, stats: ClusterStats): Map[String, ApiProcess] = {
     process match {
-      case par: Process.ParallelProcess => toApi(par, stats)
-      case seq: Process.SequentialProcess => toApi(seq, stats)
+      case par: Process.ParallelProcess          => toApi(par, stats)
+      case seq: Process.SequentialProcess        => toApi(seq, stats)
       case concurrent: Process.ConcurrentProcess => toApi(concurrent, stats)
-      case gap: Process.Gap => toApi(gap, stats)
+      case gap: Process.Gap                      => toApi(gap, stats)
     }
   }
 

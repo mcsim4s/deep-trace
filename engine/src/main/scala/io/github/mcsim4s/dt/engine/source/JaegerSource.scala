@@ -1,13 +1,10 @@
 package io.github.mcsim4s.dt.engine.source
 
-import io.github.mcsim4s.dt.model.AnalysisRequest.RawTraceSource
 import io.github.mcsim4s.dt.model.DeepTraceError.TraceRetrieveError
-import io.github.mcsim4s.dt.model.{DeepTraceError, RawTrace}
+import io.github.mcsim4s.dt.model.{DeepTraceError, RawTrace, RawTraceSource}
 import io.jaegertracing.api_v2.query.ZioQuery.QueryServiceClient
-import io.jaegertracing.api_v2.query.{FindTracesRequest, SpansResponseChunk, TraceQueryParameters}
+import io.jaegertracing.api_v2.query.{FindTracesRequest, TraceQueryParameters}
 import zio._
-import zio.Clock
-import zio.stream.ZStream
 
 class JaegerSource(jaegerClient: QueryServiceClient.Service) {
 

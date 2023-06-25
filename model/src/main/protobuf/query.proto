@@ -2,7 +2,7 @@ syntax="proto3";
 
 package io.github.mcsim4s.dt.model;
 
-enum DeepTraceTaskStateFilter {
+enum ReportStateName {
   NEW = 0;
   FETCHING = 1;
   CLUSTERING = 2;
