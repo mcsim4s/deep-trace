@@ -38,7 +38,7 @@ export default function Cluster() {
                     </Level.Item>
                 </Level.Side>
                 <Level.Side align={"right"}>
-                    <a href={`http://localhost:16686/trace/${data.getCluster.exampleTraceId}`}>{data.getCluster.exampleTraceId}</a>
+                    <a href={`http://localhost:16686/trace/${data.getCluster.exampleTraceId}`} target='_blank'>{data.getCluster.exampleTraceId}</a>
                 </Level.Side>
             </Level>
 

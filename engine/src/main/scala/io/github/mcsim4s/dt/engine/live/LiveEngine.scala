@@ -23,23 +23,24 @@ class LiveEngine(
   extends Engine {
   import tracing._
 
-  override def process(request: AnalysisRequest): IO[DeepTraceError, DeepTraceTask] = span("process_task") {
+  override def process(request: AnalysisRequest): IO[DeepTraceError, DeepTraceTask] = {
     for {
       report <- reportStore.create(request)
-      _ <- span("parse_raw_traces")(parseTraces(report, request))
-        .flatMap { clusters =>
-          span("process_clusters") {
-            ZIO.foreachDiscard(clusters)(processCluster) *>
-              reportStore.update(report.id) { _ =>
-                ZIO.succeed(report.copy(state = ClustersBuilt(clusters.map(_.id))))
-              }
+      _ <- span("process_task") {
+        span("parse_raw_traces")(parseTraces(report, request))
+          .flatMap { clusters =>
+            span("process_clusters") {
+              ZIO.foreachDiscard(clusters)(processCluster) *>
+                reportStore.update(report.id) { _ =>
+                  ZIO.succeed(report.copy(state = ClustersBuilt(clusters.map(_.id))))
+                }
+            }
           }
-        }
-        .tapBoth(
-          err => Console.printLineError(s"Async clustering error. Err: $err").ignore,
-          _ => Console.printLine("Async clustering complete").ignore
-        )
-        .forkDaemon
+          .tapBoth(
+            err => Console.printLineError(s"Async clustering error. Err: $err").ignore,
+            _ => Console.printLine("Async clustering complete").ignore
+          )
+      }.forkDaemon
     } yield report
   }
 

@@ -94,6 +94,15 @@ case class LiveTaskDao(xa: Transactor[Task]) extends TaskDao with LogDoobieQueri
       .mapError(err => UnexpectedDbError("init", err))
       .unit
   }
+
+  private def clear(): ZIO[Any, UnexpectedDbError, Unit] = {
+    sql"""
+         DELETE FROM $TableName;
+       """.update.run
+      .transact(xa)
+      .mapError(err => UnexpectedDbError("init", err))
+      .unit
+  }
 }
 
 object LiveTaskDao {
@@ -133,6 +142,7 @@ object LiveTaskDao {
       transactor <- OpsTransactor.makeTransactor(config, tracing)
       dao = LiveTaskDao(transactor)
       _ <- dao.init().mapError(_.cause)
+      _ <- dao.clear().mapError(_.cause)
     } yield dao
   }
 }

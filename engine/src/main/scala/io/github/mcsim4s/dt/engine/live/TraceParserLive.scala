@@ -101,7 +101,7 @@ class TraceParserLive(tracing: Tracing, spanStore: ProcessStore) extends TracePa
       exampleId = span.requestId
     )
 
-  def reduceConcurrent(
+  private def reduceConcurrent(
       processes: Seq[ParsedProcess[ParallelProcess]]): (Seq[ParsedProcess[ConcurrentProcess]], Seq[ParsedProcess[ParallelProcess]]) = {
     val grouped = processes.groupBy(_.process.id).values.groupBy(_.size > 1)
 
@@ -125,7 +125,7 @@ class TraceParserLive(tracing: Tracing, spanStore: ProcessStore) extends TracePa
     concurrent.toSeq -> flat.toSeq
   }
 
-  def reduceSequential(
+  private def reduceSequential(
       parent: Span,
       parentDuration: Duration,
       processes: Seq[ParsedProcess[Process]]): (Seq[ProcessInstance.Single], Seq[SequentialProcess]) = {

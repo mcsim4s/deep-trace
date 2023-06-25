@@ -71,6 +71,6 @@ package object model {
   }
 
   implicit class RichJaegerSpan(val span: Span) {
-    lazy val requestId: String = span.traceId.toByteArray.drop(8).map(String.format("%02x", _)).mkString
+    lazy val requestId: String = span.traceId.toByteArray.map(String.format("%02x", _)).mkString
   }
 }
