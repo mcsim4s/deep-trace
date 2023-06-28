@@ -1,9 +1,15 @@
 package io.github.mcsim4s.dt.model
 
-import io.github.mcsim4s.dt.model.Process.ProcessId
+import io.github.mcsim4s.dt.model.Process._
 
 sealed trait Process {
   def id: ProcessId
+
+  def tags: Map[String, String] = Map.empty
+
+  def concurrentId: Option[String] = tags.get(ConcurrentReductionTagName)
+
+  def children: Seq[Process] = Seq.empty
 
   def isGap: Boolean =
     this match {
@@ -13,12 +19,15 @@ sealed trait Process {
 }
 
 object Process {
+  private val ConcurrentReductionTagName: String = "concurrent_id"
+
   case class ProcessId(hash: String)
 
   case class ParallelProcess(
       service: String,
       operation: String,
-      children: Seq[SequentialProcess]
+      override val children: Seq[SequentialProcess],
+      override val tags: Map[String, String]
   ) extends Process {
     lazy val id: ProcessId = {
       val builder = new StringBuilder()
@@ -29,7 +38,8 @@ object Process {
     }
   }
 
-  case class SequentialProcess(children: Seq[Process]) extends Process {
+  case class SequentialProcess(override val children: Seq[Process]) extends Process {
+
     lazy val id: ProcessId = {
       val builder = new StringBuilder()
       builder.append("sequential")
@@ -39,6 +49,8 @@ object Process {
   }
 
   case class ConcurrentProcess(of: ParallelProcess) extends Process {
+    override def children: Seq[Process] = Seq(of)
+
     lazy val id: ProcessId = {
       val builder = new StringBuilder()
       builder.append("concurrent")

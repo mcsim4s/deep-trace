@@ -94,16 +94,10 @@ class LiveEngine(
   )(process: Process): IO[DeepTraceError, Map[ProcessId, ProcessStats]] =
     for {
       currentStats <- singleProcessStats(clusterId)(process)
-      subProcesses = process match {
-        case Process.SequentialProcess(children)     => children
-        case Process.ParallelProcess(_, _, children) => children
-        case Process.ConcurrentProcess(of)           => Seq(of)
-        case Process.Gap(_)                          => Seq.empty
-      }
       children <-
-        if (subProcesses.nonEmpty) {
+        if (process.children.nonEmpty) {
           ZIO
-            .foreach(subProcesses)(processesStatsRecursive(clusterId))
+            .foreach(process.children)(processesStatsRecursive(clusterId))
             .map(_.reduce(_ ++ _))
         } else ZIO.succeed(Map.empty)
     } yield Map(process.id -> currentStats) ++ children

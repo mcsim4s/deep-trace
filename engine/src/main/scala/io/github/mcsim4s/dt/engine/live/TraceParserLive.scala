@@ -8,7 +8,7 @@ import io.github.mcsim4s.dt.engine.store.ProcessStore
 import io.github.mcsim4s.dt.model.DeepTraceError.RawTraceMappingError
 import io.github.mcsim4s.dt.model.Process._
 import io.github.mcsim4s.dt.model._
-import io.jaegertracing.api_v2.model.Span
+import io.jaegertracing.api_v2.model.{KeyValue, Span, ValueTypeEnum}
 import zio.stream._
 import zio.telemetry.opentelemetry.Tracing
 import zio.{IO, Ref, URLayer, ZIO, ZLayer}
@@ -21,7 +21,8 @@ class TraceParserLive(tracing: Tracing, spanStore: ProcessStore) extends TracePa
 
   override def parse(
       rawTrace: RawTrace,
-      operationsName: String): Stream[DeepTraceError.RawTraceMappingError, TraceParsingState] = {
+      operationsName: String
+  ): Stream[DeepTraceError.RawTraceMappingError, TraceParsingState] = {
     def pushRoot(ref: Ref[Seq[Span]], span: Span) =
       ref.update(_ :+ span)
 
@@ -67,10 +68,24 @@ class TraceParserLive(tracing: Tracing, spanStore: ProcessStore) extends TracePa
     ZStream.fromZIO(traced).flatMap(chunk => ZStream.fromIterable(chunk))
   }
 
+  private def parseTags(tags: Seq[KeyValue]): Map[String, String] =
+    tags.map { kv =>
+      val value = kv.vType match {
+        case ValueTypeEnum.STRING          => kv.vStr
+        case ValueTypeEnum.BOOL            => kv.vBool.toString
+        case ValueTypeEnum.INT64           => kv.vInt64.toString
+        case ValueTypeEnum.FLOAT64         => kv.vFloat64.toString
+        case ValueTypeEnum.BINARY          => kv.vBinary.toString
+        case ValueTypeEnum.Unrecognized(_) => "unrecognized"
+      }
+      kv.key -> value
+    }.toMap
+
   def fromSpan(
       span: Span,
       parentToChildMap: ParentToChild,
-      parentStart: Instant): IO[RawTraceMappingError, TraceParsingState] =
+      parentStart: Instant
+  ): IO[RawTraceMappingError, TraceParsingState] =
     for {
       parsedChildren <- ZIO.foreach(parentToChildMap.getOrElse(span.spanId, Seq.empty)) { child =>
         fromSpan(child, parentToChildMap, span.getStartTime.toInstant)
@@ -86,7 +101,8 @@ class TraceParserLive(tracing: Tracing, spanStore: ProcessStore) extends TracePa
       resultProcess = ParallelProcess(
         service = span.getProcess.serviceName,
         operation = span.operationName,
-        children = children
+        children = children,
+        tags = parseTags(span.tags)
       )
       resultInstant = ProcessInstance.Single(
         resultProcess.id,
@@ -102,10 +118,12 @@ class TraceParserLive(tracing: Tracing, spanStore: ProcessStore) extends TracePa
     )
 
   private def reduceConcurrent(
-      processes: Seq[ParsedProcess[ParallelProcess]]): (Seq[ParsedProcess[ConcurrentProcess]], Seq[ParsedProcess[ParallelProcess]]) = {
-    val grouped = processes.groupBy(_.process.id).values.groupBy(_.size > 1)
+      processes: Seq[ParsedProcess[ParallelProcess]]
+  ): (Seq[ParsedProcess[ConcurrentProcess]], Seq[ParsedProcess[ParallelProcess]]) = {
+    val (nonFlat, flat) = processes.partition(_.process.concurrentId.isDefined)
+    val grouped = nonFlat.groupBy(_.process.concurrentId).values
 
-    val concurrent = grouped.getOrElse(true, Iterable.empty).map { group =>
+    val concurrent = grouped.map { group =>
       val processes = group.map(_.process)
       val spans = group.map(_.instance)
       val concurrentProcess = ConcurrentProcess(of = processes.head)
@@ -120,15 +138,14 @@ class TraceParserLive(tracing: Tracing, spanStore: ProcessStore) extends TracePa
       ParsedProcess(concurrentProcess, instance)
     }
 
-    val flat = grouped.getOrElse(false, Iterable.empty).flatten
-
     concurrent.toSeq -> flat.toSeq
   }
 
   private def reduceSequential(
       parent: Span,
       parentDuration: Duration,
-      processes: Seq[ParsedProcess[Process]]): (Seq[ProcessInstance.Single], Seq[SequentialProcess]) = {
+      processes: Seq[ParsedProcess[Process]]
+  ): (Seq[ProcessInstance.Single], Seq[SequentialProcess]) = {
     val pairs = processes.map { curr =>
       val startGap = gap(parent, path = Seq.empty, next = Some(curr.process))
       val startGapInstance = ProcessInstance.Single(startGap.id, start = 0.nanos, duration = curr.instance.start)
@@ -167,7 +184,7 @@ object TraceParserLive {
     builder.append(parent.operationName)
     next match {
       case Some(value) => builder.append(value.id)
-      case None => builder.append("last")
+      case None        => builder.append("last")
     }
     path.foreach(p => builder.append(p.id.hash))
     Gap(ProcessId(MD5.hash(builder.toString())))
