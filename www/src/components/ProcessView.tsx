@@ -1,6 +1,6 @@
 import React from "react";
-import {FlatStats, ParallelProcess, Process} from "../generated/graphql";
-import {Section, Level, Columns} from "react-bulma-components";
+import {ParallelProcess, Process} from "../generated/graphql";
+import {Level, Columns} from "react-bulma-components";
 import {format} from "../utils/nanos";
 import {Trace} from "../utils/Trace";
 

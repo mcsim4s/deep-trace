@@ -3,7 +3,6 @@ import { Navbar, Heading, Section, Message } from 'react-bulma-components';
 import { Route, Routes, Link } from "react-router-dom";
 import {ErrorBoundary, FallbackProps} from 'react-error-boundary';
 
-import './App.css';
 import 'bulma/css/bulma.min.css';
 import ScenarioPage from "./pages/ScenarioPage";
 import ReportsPage from "./pages/ReportsPage";

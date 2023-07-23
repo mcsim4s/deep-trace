@@ -8,26 +8,28 @@ import io.github.mcsim4s.dt.api.model.{AnalysisReport, AnalysisRequest, ClusterI
 import io.github.mcsim4s.dt.api.services._
 import io.github.mcsim4s.dt.api.services.jaeger.JaegerService
 import io.github.mcsim4s.dt.api.services.jaeger.JaegerService.JaegerService
+import io.github.mcsim4s.dt.engine.source.JaegerSource
 import zio.telemetry.opentelemetry.Tracing
 import zio.{RIO, URIO}
 
 import scala.concurrent.duration.Duration
 
 object Api extends GenericSchema[ApiService with JaegerService] {
+  type Environment = ApiService with JaegerService with Tracing
+
   implicit val stateSchema = Schema.gen[Any, AnalysisReport.State]
 
   implicit val durationSchema: Schema[Any, Duration] =
     scalarSchema("Duration", None, None, duration => LongNumber(duration.toNanos))
 
-  case class ClusterQueries(
-      getCluster: ClusterId => URIO[ApiService, TraceCluster])
+  case class ClusterQueries(getCluster: ClusterId => URIO[ApiService, TraceCluster])
 
   case class ReportQueries(
       listReports: RIO[ApiService, List[AnalysisReport]],
-      getReport: String => RIO[ApiService, AnalysisReport])
+      getReport: String => RIO[ApiService, AnalysisReport]
+  )
 
-  case class ReportsMutations(
-      createReport: AnalysisRequest => RIO[ApiService, AnalysisReport])
+  case class ReportsMutations(createReport: AnalysisRequest => RIO[ApiService, AnalysisReport])
 
   val clusters: GraphQL[ApiService with JaegerService] = GraphQL.graphQL(
     RootResolver(
@@ -52,7 +54,7 @@ object Api extends GenericSchema[ApiService with JaegerService] {
 
   val jaegerService: GraphQL[ApiService with JaegerService] = GraphQL.graphQL(RootResolver(JaegerService.queries))
 
-  val root: GraphQL[ApiService with JaegerService with Tracing] = Seq(
+  val root: GraphQL[Environment] = Seq(
     clusters,
     reports,
     jaegerService

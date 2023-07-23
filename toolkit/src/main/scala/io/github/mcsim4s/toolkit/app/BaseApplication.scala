@@ -8,7 +8,7 @@ import zio.telemetry.opentelemetry.Tracing
 trait BaseApplication extends zio.ZIOApp {
   override type Environment = Tracing with Scope
   override val environmentTag: EnvironmentTag[Environment] = EnvironmentTag[Environment]
-  type ApplicationLayer
+  type ApplicationEnvironment
 
   private val zioLogging: ZLayer[Any, Nothing, Unit] = Runtime.removeDefaultLoggers >>> SLF4J.slf4j
 
@@ -17,7 +17,15 @@ trait BaseApplication extends zio.ZIOApp {
       ZLayer.succeed(Scope.global),
       zioLogging >>> JaegerTracing.live
     )
-
   }
 
+  def program: ZIO[ApplicationEnvironment, Throwable, Unit]
+
+  def applicationEvn: ZLayer[Environment, Throwable, ApplicationEnvironment]
+
+  override def run: ZIO[Environment with ZIOAppArgs, Any, Any] = {
+    program
+      .provideLayer(applicationEvn)
+      .absorb
+  }
 }

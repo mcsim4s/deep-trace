@@ -117,7 +117,7 @@ lazy val library =
 
     object Version {
       val openTelemetryVersion = "1.21.0"
-      val zioVersion = "2.0.5"
+      val zioVersion = "2.0.6"
       val zioLoggingVersion = "2.1.7"
       val zioTracingVersion = "3.0.0-RC1"
       val opentelemetryVersion = "1.21.0"
