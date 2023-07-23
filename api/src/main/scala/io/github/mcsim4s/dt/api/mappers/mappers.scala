@@ -1,5 +1,6 @@
 package io.github.mcsim4s.dt.api
 
+import io.github.mcsim4s.dt.api.model.AnalysisReport.ClusterRef
 import io.github.mcsim4s.dt.model.report._
 import io.github.mcsim4s.dt.model.report.Report._
 import io.github.mcsim4s.dt.model._
@@ -30,10 +31,16 @@ package object mappers {
 
   def toApi(state: Report.State): ApiReport.State =
     state match {
-      case New                       => ApiReport.New
-      case Fetching()                => ApiReport.Fetching
-      case Clustering                => ApiReport.Clustering
-      case ClustersBuilt(clusterIds) => ApiReport.ClustersBuilt(clusterIds.map(toApi))
+      case New        => ApiReport.New
+      case Fetching() => ApiReport.Fetching
+      case Clustering => ApiReport.Clustering
+      case ClustersBuilt(clusterIds) =>
+        ApiReport.ClustersBuilt(clusterIds.map(toApi).map { id =>
+          ClusterRef(
+            id,
+            ApiService.getCluster(id).mapError(e => new IllegalStateException(s"Unexpected api error: ${e.message}"))
+          )
+        })
     }
 
   def toApi(process: Process.ParallelProcess, stats: ClusterStats, isRoot: Boolean = false): Map[String, ApiProcess] = {

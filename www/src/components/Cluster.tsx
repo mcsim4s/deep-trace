@@ -25,7 +25,7 @@ export default function Cluster() {
     );
     if (error) throw error;
     if (loading) return <Heading size={4}>Loading ...</Heading>;
-    if (!data) throw new Error("no data");
+    if (!data || !data.getCluster) throw new Error("no data");
 
     const trace = new Trace(data.getCluster.processes);
 
@@ -38,7 +38,7 @@ export default function Cluster() {
                     </Level.Item>
                 </Level.Side>
                 <Level.Side align={"right"}>
-                    <a href={`http://localhost:16686/trace/${data.getCluster.exampleTraceId}`} target='_blank'>{data.getCluster.exampleTraceId}</a>
+                    <a href={`http://localhost:16686/trace/${data.getCluster.exampleTraceId}`} target='_blank' rel="noreferrer">{data.getCluster.exampleTraceId}</a>
                 </Level.Side>
             </Level>
 

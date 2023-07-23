@@ -30,9 +30,9 @@ function ReportPage() {
         case "ClustersBuilt":
             body = <>
                 <Heading subtitle={true}>Report Clusters:</Heading>
-                {data.getReport.state.clusterIds.map(id => {
-                    return <Link to={`/cluster/${id.reportId}/${id.structureHash}`} key={id.structureHash}>
-                        <Box>{id.structureHash}</Box>
+                {data.getReport.state.clusterIds.map(ref => {
+                    return <Link to={`/cluster/${ref.id.reportId}/${ref.id.structureHash}`} key={ref.id.structureHash}>
+                        <Box>{ref.id.structureHash}</Box>
                     </Link>
                 })}
             </>;
@@ -42,7 +42,7 @@ function ReportPage() {
     }
 
     return <>
-        <Heading size={2}>{data.getReport?.service} ::::: {data.getReport?.operation}</Heading>
+        <Heading size={2}>{data.getReport?.service} :: {data.getReport?.operation}</Heading>
         {body}
     </>;
 }

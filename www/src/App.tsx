@@ -29,7 +29,7 @@ function Header() {
   return (
     <Navbar className="is-primary">
       <Navbar.Brand id={"m-logo"}>
-        <Navbar.Item hoverable={false}>
+        <Navbar.Item hoverable={false} href="/">
           <Heading size={3} spaced={true}>
             Deep-Trace
           </Heading>

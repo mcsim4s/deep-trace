@@ -14,8 +14,10 @@ export const ReportFragment = gql`
             ... on ClustersBuilt {
                 __typename,
                 clusterIds {
-                    reportId,
-                    structureHash
+                    id {
+                        reportId,
+                        structureHash
+                    }
                 }
             }
         }

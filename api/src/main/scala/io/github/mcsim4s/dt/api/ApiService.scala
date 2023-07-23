@@ -16,6 +16,7 @@ import io.github.mcsim4s.dt.model.{AnalysisRequest, DeepTraceError}
 import io.jaegertracing.api_v2.query.TraceQueryParameters
 import zio.telemetry.opentelemetry.Tracing
 import zio._
+import zio.query.ZQuery
 
 import java.util.UUID
 

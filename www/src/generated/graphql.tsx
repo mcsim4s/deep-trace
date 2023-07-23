@@ -30,6 +30,12 @@ export type ClusterId = {
   structureHash: Scalars['String'];
 };
 
+export type ClusterRef = {
+  __typename?: 'ClusterRef';
+  id: ClusterId;
+  cluster?: Maybe<TraceCluster>;
+};
+
 export type Clustering = {
   __typename?: 'Clustering';
   /** Fake field because GraphQL does not support empty objects. Do not query, use __typename instead. */
@@ -38,7 +44,7 @@ export type Clustering = {
 
 export type ClustersBuilt = {
   __typename?: 'ClustersBuilt';
-  clusterIds: Array<ClusterId>;
+  clusterIds: Array<ClusterRef>;
 };
 
 export type ConcurrentProcess = {
@@ -124,7 +130,7 @@ export type Process = ConcurrentProcess | Gap | ParallelProcess | SequentialProc
 
 export type Queries = {
   __typename?: 'Queries';
-  getCluster: TraceCluster;
+  getCluster?: Maybe<TraceCluster>;
   listReports?: Maybe<Array<AnalysisReport>>;
   getReport?: Maybe<AnalysisReport>;
   suggest: SuggestResponse;
